@@ -50,4 +50,7 @@ class QemuSession{
         void flipRegisterBit(int reg, int bit);
         void writeMemory(uint16_t addr, uint8_t value);
         void setPC(uint16_t pc);
+        ~QemuSession(){
+            stop();
+        }
 };
