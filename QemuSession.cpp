@@ -37,13 +37,17 @@ class QemuSession{
                 return -1;
             }
         }
-	int stop(){
-        if(pid<=0){
-            std::cerr<<"QEMU is not runnning"<<std::endl;
-            return -1;
+        int stop(){
+            if(pid<=0){
+                std::cerr<<"QEMU is not runnning"<<std::endl;
+                return -1;
+            }
+            std::cout<<"killing QEMU with pid :"<<pid<<std::endl;
+            kill(pid,SIGTERM);
+            return 0;
         }
-        std::cout<<"killing QEMU with pid :"<<pid<<std::endl;
-        kill(pid,SIGTERM);
-        return 0;
-	}
+        void writeRegister(int reg, uint8_t value);
+        void flipRegisterBit(int reg, int bit);
+        void writeMemory(uint16_t addr, uint8_t value);
+        void setPC(uint16_t pc);
 };
