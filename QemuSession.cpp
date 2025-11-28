@@ -6,7 +6,7 @@
 #include <sys/wait.h>
 #include "QemuSession.h"
 
-QemuSession::QemuSession(const std::string &firmwarePath, const std::string &arch, const std::string &micro, const std::string &gdb_ip = "127.0.0.1", int gdb_port = 1234)
+QemuSession::QemuSession(const std::string &firmwarePath, const std::string &arch, const std::string &micro, const std::string &gdb_ip , int gdb_port )
 {
     this->gdb_ip = gdb_ip;
     this->gdb_port = gdb_port;
@@ -49,10 +49,12 @@ int QemuSession::start()
         {
             std::cout << "Connected to GDB stub at " << gdb_ip << ":" << gdb_port << std::endl;
         }
+        return 0;
     }
     else
     {
         std::cerr << "Failed to fork()" << std::endl;
+        return -1;
     }
 }
 int QemuSession::stop() noexcept
@@ -90,6 +92,7 @@ int QemuSession::flipRegisterBit(std::string reg, int bit)
 int QemuSession::writeMemory(uint16_t addr, uint8_t value)
 {
     std::cout << "writing in addr: " << addr << "\n value: " << value << std::endl;
+    return 0;
 }
 
 QemuSession::~QemuSession()
