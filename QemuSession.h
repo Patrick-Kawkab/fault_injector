@@ -1,7 +1,8 @@
 #ifndef QEMUSESSION_H
 #define QEMUSESSION_h
 #include "GDBClient.h"
-class QemuSession
+#include "Session.h"
+class QemuSession : public Session
 {
 private:
     std::string cmd;
@@ -12,11 +13,12 @@ private:
 
 public:
     QemuSession(const std::string &firmwarePath, const std::string &arch, const std::string &micro, const std::string &gdb_ip = "127.0.0.1", int gdb_port = 1234);
-    int start();
-    int stop() noexcept;
-    int setPC(uint16_t pc);
-    int flipRegisterBit(std::string reg, int bit);
-    int writeMemory(uint16_t addr, uint8_t value);
+    int start() override;
+    int stop() noexcept override;
+    int setPC(uint16_t pc) override;
+    int checkPC() override;
+    int flipRegisterBit(std::string reg, int bit)override;
+    int writeMemory(uint16_t addr, uint8_t value)override;
     ~QemuSession();
 };
 #endif

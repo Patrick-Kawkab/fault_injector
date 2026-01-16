@@ -6,29 +6,41 @@
 #include <sys/wait.h>
 #include "QemuSession.h"
 
-QemuSession::QemuSession(const std::string &firmwarePath, const std::string &arch, const std::string &micro, const std::string &gdb_ip , int gdb_port )
+QemuSession::QemuSession(const std::string &firmwarePath,
+                         const std::string &arch,
+                         const std::string &micro,
+                         const std::string &gdb_ip,
+                         int gdb_port)
 {
     this->gdb_ip = gdb_ip;
     this->gdb_port = gdb_port;
+
     if (arch == "avr")
     {
-        cmd = "qemu-system-" + arch + " -machine " + micro +
+        cmd = "qemu-system-" + arch +
+              " -machine " + micro +
               " -bios " + firmwarePath +
               " -nographic -S -gdb tcp:" + std::to_string(gdb_port);
     }
-    else if (arch == "arm")
+    else if (arch == "arm")  // ← this now means TIVA-C
     {
-        cmd = "qemu-system-" + arch + " -machine " + micro +
-              " -kernel " + firmwarePath +
-              " -nographic -S -gdb tcp:" + std::to_string(gdb_port);
+        cmd = "qemu-system-arm "
+              "-machine " + micro +            // e.g. lm3s6965evb
+              " -cpu cortex-m4 "
+              "-kernel " + firmwarePath +
+              " -nographic -S -gdb tcp::" +
+              std::to_string(gdb_port);
     }
     else if (arch == "tricore")
     {
-        cmd = "qemu-system-" + arch + " -cpu " + micro +
+        cmd = "qemu-system-" + arch +
+              " -cpu " + micro +
               " -kernel " + firmwarePath +
-              " -nographic -S -gdb tcp:" + std::to_string(gdb_port);
+              " -nographic -S -gdb tcp:" +
+              std::to_string(gdb_port);
     }
 }
+
 int QemuSession::start()
 {
     pid = fork();
@@ -81,7 +93,12 @@ int QemuSession::stop() noexcept
 }
 int QemuSession::setPC(uint16_t pc)
 {
-    std::cout << "jump instruction to jump to address: " << pc << std::endl;
+    std::cout << "set jump instruction to jump to address: " << pc << std::endl;
+    return 0;
+}
+int QemuSession::checkPC()
+{
+    std::cout << "check program counter address";
     return 0;
 }
 int QemuSession::flipRegisterBit(std::string reg, int bit)
