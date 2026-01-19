@@ -291,23 +291,12 @@ EOF
             done
 
             NUMBER=false
-        
-
-            while [ "$NUMBER" = false ]; do
 
                 ADDRESS=$(whiptail --inputbox "Where do you want to Inject?" 0 0 --title "Location of injection." 3>&1 1>&2 2>&3)
 
                 # Exit if canceled
                 [ $? -ne 0 ] && exit 1
 
-                if [[ ! "$ADDRESS" =~ ^[0-9]+$ ]];then
-                    whiptail --msgbox "Please input a numbers only" 0 0
-                else
-                    NUMBER=true
-                fi
-            done
-
-            NUMBER=false
 
             while [ "$NUMBER" = false ]; do
 
