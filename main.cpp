@@ -1,3 +1,6 @@
+#define CONFIG_JSON_PATH   "Input.json"
+#define ELF_FILE_PATH     "firmware/tiva_led.elf"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -7,7 +10,6 @@
 #include <cstdint>
 
 #include "HardSession.h"
-#include "GDBClient.h"
 #include "json.hpp"
 
 using json = nlohmann::json;
@@ -37,7 +39,6 @@ uint32_t getSystemStateAddress(const std::string& elfPath)
 
 int main(){
     std::cout << "[INFO] Fault Injector started\n";
-
     /* ---------------- Load JSON ---------------- */
     json config;
     try {
@@ -47,21 +48,29 @@ int main(){
         std::cerr << "[ERROR] Failed to read config JSON\n";
         return -1;
     }
-
-    const std::string targetSymbol = config["target_symbol"];
-    const uint32_t triggerValue    = config["trigger_value"];
-    const int maxInjections        = config["max_injections"];
-    const int injectDelayMs        = config["injection_delay_ms"];
-
-    /* ---------------- Resolve symbol ---------------- */
-    uint32_t systemStateAddr;
-    try {
-        systemStateAddr = getSymbolAddressFromELF(targetSymbol);
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] " << e.what() << "\n";
-        return -1;
+    const int faultID              = config["id"];
+    const std::string firmware     = config["Firmware"];
+    const std::string mode         = config["Mode"];
+    const std::string target       = config["Target"];
+    const std::string fault_type   = config["fault_type"];
+    const uint8_t max              = config["max"];
+    const uint8_t min              = config["min"];
+    const uint32_t address         = config["address"]
+    const uint8_t value            = config["value"]
+    if(mode=="HARDWARE" && fault_type=="memory_corruption"){
+        HardwareSession hardware;
+        hardware.start();
+        
+        std::cout << "[INFO] " << targetSymbol
+        /* ---------------- Resolve symbol ---------------- */
+        volatile uint32_t systemStateAddr;
+        try {
+            systemStateAddr = getSymbolAddressFromELF(targetSymbol);
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] " << e.what() << "\n";
+            return -1;
+        }
+        << " @ 0x" << std::hex << systemStateAddr << std::dec << "\n";
+        hardware.memoryCorruptionTest(systemStateAddr,value,minmax);
     }
-
-    std::cout << "[INFO] " << targetSymbol
-              << " @ 0x" << std::hex << systemStateAddr << std::dec << "\n";
 }
