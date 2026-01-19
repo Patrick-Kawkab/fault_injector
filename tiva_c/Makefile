@@ -10,8 +10,8 @@ tiva_led.elf: tiva_led.o vectors.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 	arm-none-eabi-size $@
 
-tiva_led.o: tiva_led_corrected.c tm4c123gh6pm.h
-	$(CC) $(CFLAGS) -c -o $@ tiva_led.c
+tiva_led.o: tiva_led_wrong.c tm4c123gh6pm.h
+	$(CC) $(CFLAGS) -c -o $@ tiva_led_wrong.c
 
 vectors.o: vectors.c
 	$(CC) $(CFLAGS) -c -o $@ vectors.c

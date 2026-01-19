@@ -1,0 +1,16 @@
+{
+    "faults": [
+        {
+            "Firmware": "tiva_led.elf",
+            "Mode": "HARDWARE",
+            "Target": "ARM",
+            "address": 536870920,
+            "fault_type": "memory_corruption",
+            "id": 1,
+            "max": 2,
+            "min": 0,
+            "result": "FAILED",
+            "value": 255
+        }
+    ]
+}
