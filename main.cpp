@@ -65,8 +65,7 @@ int main(){
         /* ---------------- Resolve symbol ---------------- */
         volatile uint32_t systemStateAddr;
         try {
-        uint32_t systemStateAddr =
-            getSystemStateAddress(elfPath);        
+        systemStateAddr = getSystemStateAddress(elfPath);        
         }
         catch (const std::exception& e) {
             std::cerr << "[ERROR] " << e.what() << "\n";
@@ -74,6 +73,30 @@ int main(){
         }
         std::cout << "[INFO] "
         << " @ 0x" << std::hex << systemStateAddr << std::dec << "\n";
-        hardware.memoryCorruptionTest(systemStateAddr,value,min,max);
+        bool testResult =
+            hardware.memoryCorruptionTest(systemStateAddr, value, min, max);
+        json output;
+        output["faults"] = json::array();
+
+        json faultResult;
+        faultResult["Firmware"]   = firmware;
+        faultResult["Mode"]       = mode;
+        faultResult["Target"]     = target;
+        faultResult["id"]         = faultID;
+        faultResult["fault_type"] = fault_type;
+        faultResult["min"]        = min;
+        faultResult["max"]        = max;
+        faultResult["address"]    = systemStateAddr;
+        faultResult["value"]      = value;
+        faultResult["result"]     = testResult ? "PASSED" : "FAILED";
+
+        output["faults"].push_back(faultResult);
+
+        /* Write output JSON */
+        std::ofstream out("campaign_result.json");
+        out << output.dump(4);
+        out.close();
+
+        std::cout << "[INFO] Campaign result written to campaign_result.json\n";
     }
 }
