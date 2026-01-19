@@ -14,11 +14,11 @@
 
 using json = nlohmann::json;
 
-uint32_t getSystemStateAddress(const std::string& elfPath)
+uint32_t getSystemStateAddress(const std::string& elfPath ,const std::string& address)
 {
-    std::stringstream cmd;
+        std::stringstream cmd;
     cmd << "arm-none-eabi-nm " << elfPath
-        << " | awk '$3==\"system_state\" {print $1}'";
+        << " | awk '$3==\"" << address << "\" {print $1}'";
 
     FILE* pipe = popen(cmd.str().c_str(), "r");
     if (!pipe) {
@@ -54,7 +54,7 @@ int main(){
     const std::string fault_type   = config["fault_type"];
     const uint8_t max              = config["max"];
     const uint8_t min              = config["min"];
-    const uint32_t address         = config["address"];
+    const std::string address      = config["address"];
     const uint8_t value            = config["value"];       
     /* Construct full ELF path */
     std::string elfPath = std::string(ELF_FILE_DIR) + firmware;
@@ -65,7 +65,7 @@ int main(){
         /* ---------------- Resolve symbol ---------------- */
         volatile uint32_t systemStateAddr;
         try {
-        systemStateAddr = getSystemStateAddress(elfPath);        
+        systemStateAddr = getSystemStateAddress(elfPath , address);        
         }
         catch (const std::exception& e) {
             std::cerr << "[ERROR] " << e.what() << "\n";
