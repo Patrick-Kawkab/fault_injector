@@ -1,5 +1,5 @@
 #define CONFIG_JSON_PATH   "Input.json"
-#define ELF_FILE_PATH     "firmware/tiva_led.elf"
+#define ELF_FILE_DIR       "tiva_c/"
 
 #include <iostream>
 #include <fstream>
@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <cstdint>
 
-#include "HardSession.h"
+#include "HardwareSession.h"
 #include "json.hpp"
 
 using json = nlohmann::json;
@@ -36,7 +36,6 @@ uint32_t getSystemStateAddress(const std::string& elfPath)
     return static_cast<uint32_t>(std::stoul(buffer, nullptr, 16));
 }
 
-
 int main(){
     std::cout << "[INFO] Fault Injector started\n";
     /* ---------------- Load JSON ---------------- */
@@ -55,22 +54,26 @@ int main(){
     const std::string fault_type   = config["fault_type"];
     const uint8_t max              = config["max"];
     const uint8_t min              = config["min"];
-    const uint32_t address         = config["address"]
-    const uint8_t value            = config["value"]
+    const uint32_t address         = config["address"];
+    const uint8_t value            = config["value"];       
+    /* Construct full ELF path */
+    std::string elfPath = std::string(ELF_FILE_DIR) + firmware;
+
     if(mode=="HARDWARE" && fault_type=="memory_corruption"){
         HardwareSession hardware;
         hardware.start();
-        
-        std::cout << "[INFO] " << targetSymbol
         /* ---------------- Resolve symbol ---------------- */
         volatile uint32_t systemStateAddr;
         try {
-            systemStateAddr = getSymbolAddressFromELF(targetSymbol);
-        } catch (const std::exception& e) {
+        uint32_t systemStateAddr =
+            getSystemStateAddress(elfPath);        
+        }
+        catch (const std::exception& e) {
             std::cerr << "[ERROR] " << e.what() << "\n";
             return -1;
         }
+        std::cout << "[INFO] "
         << " @ 0x" << std::hex << systemStateAddr << std::dec << "\n";
-        hardware.memoryCorruptionTest(systemStateAddr,value,minmax);
+        hardware.memoryCorruptionTest(systemStateAddr,value,min,max);
     }
 }
