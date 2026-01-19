@@ -1,4 +1,3 @@
-
 #include "HardwareSession.h"
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -137,4 +136,3 @@ int HardwareSession::setPC(uint16_t pc) {
     sendCmd("resume");
     return 0;
 }
->>>>>>> a00ef66 (New Hardware session with base session class and tiva_c directory)
