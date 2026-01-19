@@ -22,7 +22,7 @@ QemuSession::QemuSession(const std::string &firmwarePath,
               " -bios " + firmwarePath +
               " -nographic -S -gdb tcp:" + std::to_string(gdb_port);
     }
-    else if (arch == "arm")  // ← this now means TIVA-C
+    else if (arch == "arm")  // ← this means TIVA-C
     {
         cmd = "qemu-system-arm "
               "-machine " + micro +            // e.g. lm3s6965evb

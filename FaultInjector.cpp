@@ -40,7 +40,7 @@ bool FaultInjector::waitForInjectionTime(uint32_t timeMs)
 }
 
 bool FaultInjector::injectFault(const FaultConfig& config)
-{
+{v
     std::cout << "Injecting fault of type: " << static_cast<int>(config.type) << std::endl;
     
     int result = -1;
