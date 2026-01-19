@@ -123,7 +123,8 @@ bool HardwareSession::memoryCorruptionTest(uint32_t addr, uint8_t injectedValue,
     
     
     bool passed = (readVal >= minExpected && readVal <= maxExpected);
-    
+        
+    sendCmd("resume");
     return passed;
 }
 int HardwareSession::setPC(uint16_t pc) {

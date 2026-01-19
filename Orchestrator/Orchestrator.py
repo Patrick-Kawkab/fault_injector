@@ -11,9 +11,6 @@ logging.basicConfig(filename="orchest.log",
 
 class Orchestrator:
     def __init__(self):
-
-        subprocess.run(["../../main"],check=True)
-
         subprocess.run(["./TUI.sh"], check=True)
         
 if __name__ == "__main__":

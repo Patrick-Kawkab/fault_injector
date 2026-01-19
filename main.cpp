@@ -1,5 +1,5 @@
-#define CONFIG_JSON_PATH   "Input.json"
-#define ELF_FILE_DIR       "tiva_c/"
+#define CONFIG_JSON_PATH   "./Orchestrator/Input.json"
+#define ELF_FILE_DIR       "./tiva_c/"
 
 #include <iostream>
 #include <fstream>
@@ -47,15 +47,17 @@ int main(){
         std::cerr << "[ERROR] Failed to read config JSON\n";
         return -1;
     }
-    const int faultID              = config["id"];
-    const std::string firmware     = config["Firmware"];
-    const std::string mode         = config["Mode"];
-    const std::string target       = config["Target"];
-    const std::string fault_type   = config["fault_type"];
-    const uint8_t max              = config["max"];
-    const uint8_t min              = config["min"];
-    const std::string address      = config["address"];
-    const uint8_t value            = config["value"];       
+
+    const auto& fault = config["faults"][0];
+    const int faultID              = fault["id"];
+    const std::string firmware     = fault["Firmware"];
+    const std::string mode         = fault["Mode"];
+    const std::string target       = fault["Target"];
+    const std::string fault_type   = fault["fault_type"];
+    const uint8_t max              = fault["max"];
+    const uint8_t min              = fault["min"];
+    const std::string address      = fault["address"];
+    const uint8_t value            = fault["value"];       
     /* Construct full ELF path */
     std::string elfPath = std::string(ELF_FILE_DIR) + firmware;
 
