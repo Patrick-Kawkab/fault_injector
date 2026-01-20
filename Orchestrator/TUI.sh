@@ -326,7 +326,7 @@ EOF
                         "max": $MAX,
                         "min": $MIN,
                         "address": "$ADDRESS",
-                        "value": $VALUE
+                        "value": "$VALUE"
                     }
 EOF
                 # Add comma except for last entry
