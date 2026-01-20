@@ -74,7 +74,7 @@ int main(){
             return -1;
         }
         std::cout << "[INFO] "
-        << " @ 0x" << std::hex << systemStateAddr << std::dec << "\n";
+        << " 0x" << std::hex << systemStateAddr << std::dec << "\n";
         bool testResult =
             hardware.memoryCorruptionTest(systemStateAddr, value, min, max);
         json output;
@@ -88,10 +88,17 @@ int main(){
         faultResult["fault_type"] = fault_type;
         faultResult["min"]        = min;
         faultResult["max"]        = max;
-        faultResult["address"]    = systemStateAddr;
+        faultResult["address"]    = nlohmann::json::string_t([&]
+                                                            {
+                                                                std::stringstream ss;
+                                                                ss<<"0x"<<std::hex<<std::uppercase<<systemStateAddr;
+                                                                return ss.str();
+                                                            }());
         faultResult["value"]      = value;
         faultResult["result"]     = testResult ? "PASSED" : "FAILED";
-
+        std::cout<<"fault:\n"<<"    Mode: "<<faultResult["Mode"]<<"\n"<<"    Target: "<<faultResult["Target"] <<"\n"<<"    ID: "<<faultResult["id"] <<"\n"
+                        <<"    fault_type: "<<faultResult["fault_type"]<<"\n"<<"    minimum_value: "<<faultResult["min"]<<"\n"<<"    maximum_value:"<<fault["max"]<<"\n"
+                        <<"    address: "<<   faultResult["address"]<<"\n"<<"    coruppted_value: "<<faultResult["value"]<<"\n"<<"    test_result: "<<faultResult["result"] <<std::endl;
         output["faults"].push_back(faultResult);
 
         /* Write output JSON */
@@ -99,6 +106,6 @@ int main(){
         out << output.dump(4);
         out.close();
 
-        std::cout << "[INFO] Campaign result written to campaign_result.json\n";
+        std::cout << "[INFO] Campaign result written to campaign_result.json"<<std::endl;
     }
 }

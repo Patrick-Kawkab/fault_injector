@@ -109,7 +109,7 @@ for ((i=1; i<=NUM_FAULTS; i++)); do
 
                 cat >> "$OUTPUT_FILE" <<EOF
                 {
-                    "Firmware": "$FIRMWARE".elf,
+                    "Firmware": "$FIRMWARE.elf",
                     "Mode": "$INJECTION",
                     "Target": "$TARGET",
                     "id": $i,
@@ -227,7 +227,7 @@ EOF
 
                     cat >> "$OUTPUT_FILE" <<EOF
                         {
-                            "Firmware": "$FIRMWARE".elf,
+                            "Firmware": "$FIRMWARE.elf",
                             "Mode": "$INJECTION",
                             "Target": "$TARGET",
                             "id": $i,
@@ -318,7 +318,7 @@ EOF
 
                 cat >> "$OUTPUT_FILE" <<EOF
                     {
-                        "Firmware": "$FIRMWARE".elf,
+                        "Firmware": "$FIRMWARE.elf",
                         "Mode": "$INJECTION",
                         "Target": "$TARGET",
                         "id": $i,
@@ -375,7 +375,7 @@ EOF
 
                 cat >> "$OUTPUT_FILE" <<EOF
                     {
-                        "Firmware": "$FIRMWARE".elf,
+                        "Firmware": "$FIRMWARE.elf",
                         "Mode": "$INJECTION",
                         "Target": "$TARGET",
                         "id": $i,
