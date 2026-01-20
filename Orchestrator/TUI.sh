@@ -298,19 +298,11 @@ EOF
                 [ $? -ne 0 ] && exit 1
 
 
-            while [ "$NUMBER" = false ]; do
-
                 VALUE=$(whiptail --inputbox "What value do you want to input?" 0 0 --title "Corruption value." 3>&1 1>&2 2>&3)
 
                 # Exit if canceled
                 [ $? -ne 0 ] && exit 1
 
-                if [[ ! "$VALUE" =~ ^[0-9]+$ ]];then
-                    whiptail --msgbox "Please input a numbers only" 0 0
-                else
-                    NUMBER=true
-                fi
-            done
 
             if whiptail --title "Values Confirmation" --yesno "Are you sure of these values? \n Adress: "$ADDRESS" \n Value: $VALUE" 0 0; then
 
