@@ -3,15 +3,15 @@ CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft \
          -ffunction-sections -fdata-sections \
          -std=c99 -Wall -Wextra
 LDFLAGS = -T tm4c123gh6pm.ld -nostartfiles -Wl,--gc-sections
-
+c_code = tiva_led_wrong.c
 all: tiva_led.elf
 
 tiva_led.elf: tiva_led.o vectors.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 	arm-none-eabi-size $@
 
-tiva_led.o: tiva_led_wrong.c tm4c123gh6pm.h
-	$(CC) $(CFLAGS) -c -o $@ tiva_led_wrong.c
+tiva_led.o: $(c_code) tm4c123gh6pm.h
+	$(CC) $(CFLAGS) -c -o $@ $(c_code)
 
 vectors.o: vectors.c
 	$(CC) $(CFLAGS) -c -o $@ vectors.c
