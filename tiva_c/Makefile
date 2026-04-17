@@ -3,7 +3,7 @@ CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft \
          -ffunction-sections -fdata-sections \
          -std=c99 -Wall -Wextra
 LDFLAGS = -T tm4c123gh6pm.ld -nostartfiles -Wl,--gc-sections
-c_code = tiva_led_wrong.c
+c_code = tiva_led_corrected.c
 all: tiva_led.elf
 
 tiva_led.elf: tiva_led.o vectors.o
