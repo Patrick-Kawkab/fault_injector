@@ -43,7 +43,7 @@ void     vLCDTask(void *pvParameters);
 #define SPEED_MAX               300
 #define SPEED_STEP              10
 
-#define ENCODER_PPR             20
+#define ENCODER_PPR             11
 #define SAMPLE_PERIOD_MS        100
 
 #define ZERO_RPM_LIMIT          30      // 30 * 100ms = 3 seconds
