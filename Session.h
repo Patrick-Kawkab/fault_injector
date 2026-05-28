@@ -12,7 +12,7 @@ public:
     virtual ~Session()= default;
     virtual int start()=0;
     virtual int stop()=0;
-    virtual int setPC(uint16_t pc)=0;
+    virtual int setPC(uint32_t pc)=0;
     virtual bool memoryCorruptionTest(uint32_t addr,uint8_t injectedValue,uint8_t minExpected,  uint8_t maxExpected)=0;
     bool bitFlipTest(uint32_t addr,   uint8_t  bitPos,
                      uint8_t  minExp, uint8_t  maxExp,

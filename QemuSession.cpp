@@ -134,7 +134,7 @@ bool QEMUSession::memoryCorruptionTest(uint32_t addr,
 // To mirror HardwareSession::setPC we accept only a uint16_t new PC value.
 // The plugin will redirect execution when the instruction counter fires.
 // Because setPC has no "success range" concept we always return 0.
-int QEMUSession::setPC(uint16_t newPC) {
+int QEMUSession::setPC(uint32_t newPC) {
     // Default: inject at instruction 1 (immediately)
     // Caller can use the extended runCampaign path if a specific count matters
     std::ostringstream js;
