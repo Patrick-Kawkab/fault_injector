@@ -1,6 +1,8 @@
 #include"Session.h"
 #include "HardwareSession.h"
 #include "QemuSession.h"
+#include<memory>
+#include<stdexcept>
 
 #define ELF_FILE_PATH      "./tiva_c/tiva_led.elf" //temp fix
 

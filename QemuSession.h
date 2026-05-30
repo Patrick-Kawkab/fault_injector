@@ -68,7 +68,7 @@ public:
                               uint8_t  maxExpected) override;
 
     // trigger: instruction count == targetCount  (set new PC value)
-    int  setPC(uint16_t PC) override;
+    int  setPC(uint32_t PC) override;
 
     // ── Extra fault primitives ───────────────────────────────────────────────
 

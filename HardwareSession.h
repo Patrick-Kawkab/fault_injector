@@ -12,7 +12,7 @@ public:
     int start() override;
     int stop() noexcept override;
 
-    int setPC(uint16_t pc) override;
+    int setPC(uint32_t pc) override;
 
     bool memoryCorruptionTest(uint32_t addr,uint8_t injectedValue,uint8_t minExpected,  uint8_t maxExpected) override;
 
