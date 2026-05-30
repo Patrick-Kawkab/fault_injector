@@ -27,6 +27,8 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
+#include <cinttypes>  // REQUIRED for PRIu32, PRIu64, etc.
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -242,7 +244,6 @@ bool QEMUSession::launchQEMU() {
     cmd << "qemu-system-arm"
         << " -machine "  << machine_
         << " -cpu "      << cpu_
-        << " -nographic"
         << " -kernel "   << firmware_
         << " -plugin "   << pluginPath_
                          << ",server=localhost:" << serverPort_

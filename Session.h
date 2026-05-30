@@ -1,11 +1,16 @@
 #ifndef SESSION_H
 #define SESSION_H
+
+
+
 #include <iostream>
 #include <string>
 #include <unistd.h>
 #include <signal.h>
 #include <fstream>
 #include <sys/wait.h>
+#include <cstdint>
+#include <memory>
 
 class Session {
 public:

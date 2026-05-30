@@ -35,6 +35,7 @@
 #include "Session.h"
 #include <string>
 #include <cstdint>
+#include <memory>
 #include <sys/types.h>   // pid_t
 
 class QEMUSession : public Session {
@@ -50,7 +51,7 @@ public:
     explicit QEMUSession(const std::string& firmware,
                          const std::string& pluginPath  = "./fault_plugin.so",
                          const std::string& machine     = "lm3s6965evb",
-                         const std::string& cpu         = "cortex-m3",
+                         const std::string& cpu         = "cortex-m4",
                          const std::string& resultFile  = "./campaign_result.json",
                          int                serverPort   = 9001);
 

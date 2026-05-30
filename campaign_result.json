@@ -9,7 +9,7 @@
             "id": 1,
             "max": 2,
             "min": 0,
-            "result": "PASSED",
+            "result": "FAILED",
             "value": 255
         }
     ]
