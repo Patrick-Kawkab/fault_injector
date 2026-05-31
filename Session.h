@@ -21,7 +21,7 @@ public:
     virtual FaultResult setPC(const FaultDescriptor& desc)=0;
     virtual FaultResult memoryCorruptionTest(const FaultDescriptor& desc)=0;
     virtual FaultResult bitFlipTest(const FaultDescriptor& desc)=0;    
-    virtual FaultResult instructionSkipTest(uint32_t addr)=0;
+    virtual FaultResult instructionSkipTest(const FaultDescriptor& desc)=0;
     virtual FaultResult sensorCorruptionTest(const FaultDescriptor& desc)=0;
     
     static std::unique_ptr<Session> create(const std::string& type);

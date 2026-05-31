@@ -1,75 +1,67 @@
 // =============================================================================
-//  QEMUSession.cpp  —  plugin-only fault injection session
+//  QemuSession.cpp  —  plugin-only fault injection session
 //
-//  No GDB.  QEMUSession is a TCP server; fault_plugin.so is the client.
-//  Every fault method follows the same lifecycle:
+//  No JSON anywhere.  Wire protocol is raw binary structs:
 //
-//    bindServer (once in start())
-//    │
-//    └─ runCampaign(faultJson)
-//         ├── launchQEMU()          fork + exec qemu-system-arm with -plugin
-//         ├── acceptPlugin()        accept the plugin's connect()
-//         ├── sendFaultDescriptor() send JSON fault, wait for "READY\n"
-//         ├── [QEMU runs, plugin injects, plugin writes result file]
-//         └── waitForResult()       waitpid() + parse campaign_result.json
+//    sendDescriptor()  →  write(sock, &FaultDescriptor, sizeof(FaultDescriptor))
+//    recvResult()      ←  read (sock, &FaultResult,     sizeof(FaultResult))
+//
+//  Every fault method:
+//    runCampaign(desc)
+//      ├── launchQEMU()       fork + exec qemu-system-arm with -plugin
+//      ├── acceptPlugin()     accept plugin's TCP connect()
+//      ├── sendDescriptor()   send FaultDescriptor binary, wait for ACK byte
+//      ├── [QEMU runs, plugin injects, plugin evaluates]
+//      ├── recvResult()       read FaultResult binary from plugin
+//      └── stop()             kill QEMU, close sockets
 // =============================================================================
 
 #include "QemuSession.h"
 
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <signal.h>
-#include <fcntl.h>
+#include <unistd.h>
 
 #include <cstring>
 #include <cstdio>
-#include <cstdlib>
-#include <cstdint>
-#include <cinttypes>  // REQUIRED for PRIu32, PRIu64, etc.
-#include <sstream>
-#include <fstream>
 #include <iostream>
-#include <stdexcept>
+#include <sstream>
 #include <chrono>
 #include <thread>
 
-// Simple JSON builder — avoids pulling in nlohmann just for the session layer.
-// The orchestrator already has nlohmann; these helpers only build small objects.
-static std::string jsonStr(const std::string& k, const std::string& v) {
-    return "\"" + k + "\":\"" + v + "\"";
+// ── ACK byte sent by plugin after it receives the descriptor ─────────────────
+static constexpr uint8_t ACK_READY = 0xAC;
+
+// ── Fault type name helper for prints ────────────────────────────────────────
+static const char* faultTypeName(uint8_t ft) {
+    switch (ft) {
+        case FAULT_MEMORY_CORRUPTION: return "memory_corruption";
+        case FAULT_INSTRUCTION_SKIP:  return "instruction_skip";
+        case FAULT_BIT_FLIP:          return "bit_flip";
+        case FAULT_SET_PC:            return "set_pc";
+        case FAULT_SENSOR_CORRUPTION: return "sensor_corruption";
+        default:                      return "unknown";
+    }
 }
-static std::string jsonU32(const std::string& k, uint32_t v) {
-    char buf[32]; snprintf(buf, sizeof(buf), "\"%" "s\":%" PRIu32, k.c_str(), v);
-    return std::string(buf);
-}
-static std::string jsonU64(const std::string& k, uint64_t v) {
-    char buf[48]; snprintf(buf, sizeof(buf), "\"%" "s\":%" PRIu64, k.c_str(), v);
-    return std::string(buf);
-}
-static std::string jsonU8(const std::string& k, uint8_t v) {
-    char buf[32]; snprintf(buf, sizeof(buf), "\"%" "s\":%" PRIu8, k.c_str(), v);
-    return std::string(buf);
+
+static const char* triggerName(uint8_t tr) {
+    switch (tr) {
+        case TRIGGER_PC:         return "pc";
+        case TRIGGER_INSN_COUNT: return "insn_count";
+        case TRIGGER_MEM_ACCESS: return "mem_access";
+        default:                 return "unknown";
+    }
 }
 
 // ============================================================================
 //  Construction / destruction
 // ============================================================================
 
-QEMUSession::QEMUSession(const std::string& firmware,
-                         const std::string& pluginPath,
-                         const std::string& machine,
-                         const std::string& cpu,
-                         const std::string& resultFile,
-                         int                serverPort)
-    : firmware_(firmware),
-      pluginPath_(pluginPath),
-      machine_(machine),
-      cpu_(cpu),
-      resultFile_(resultFile),
-      serverPort_(serverPort)
+QEMUSession::QEMUSession(const QemuSessionConfig& cfg)
+    : cfg_(cfg)
 {}
 
 QEMUSession::~QEMUSession() {
@@ -81,129 +73,66 @@ QEMUSession::~QEMUSession() {
 // ============================================================================
 
 int QEMUSession::start() {
-    // Bind the server socket once — reused for every campaign in this session
+    std::cout << "\n[QEMUSession] ============================================\n";
+    std::cout << "[QEMUSession] Initialising session\n";
+    std::cout << "[QEMUSession]   firmware   : " << cfg_.firmware   << "\n";
+    std::cout << "[QEMUSession]   plugin     : " << cfg_.pluginPath << "\n";
+    std::cout << "[QEMUSession]   machine    : " << cfg_.machine    << "\n";
+    std::cout << "[QEMUSession]   cpu        : " << cfg_.cpu        << "\n";
+    std::cout << "[QEMUSession]   port       : " << cfg_.serverPort << "\n";
+    std::cout << "[QEMUSession]   timeout    : " << cfg_.timeoutSecs << "s\n";
+    std::cout << "[QEMUSession] ============================================\n";
+
     if (!bindServer()) {
-        std::cerr << "[QEMUSession] Failed to bind server on port "
-                  << serverPort_ << "\n";
+        std::cerr << "[QEMUSession] ERROR: failed to bind server on port "
+                  << cfg_.serverPort << "\n";
         return -1;
     }
-    std::cout << "[QEMUSession] Server listening on port " << serverPort_ << "\n";
+
+    std::cout << "[QEMUSession] TCP server bound on port "
+              << cfg_.serverPort << " — waiting for plugin\n";
     return 0;
 }
 
 int QEMUSession::stop() noexcept {
-    // Kill QEMU if still running
     if (qemuPid_ > 0) {
+        std::cout << "[QEMUSession] Sending SIGTERM to QEMU PID=" << qemuPid_ << "\n";
         ::kill(qemuPid_, SIGTERM);
         int status;
         ::waitpid(qemuPid_, &status, 0);
+        std::cout << "[QEMUSession] QEMU exited  status=" << status << "\n";
         qemuPid_ = -1;
     }
-    // Close plugin connection
-    if (pluginSock_ >= 0) { ::close(pluginSock_); pluginSock_ = -1; }
-    // Close server socket
-    if (serverSock_ >= 0) { ::close(serverSock_); serverSock_ = -1; }
+    if (pluginSock_ >= 0) {
+        ::close(pluginSock_);
+        pluginSock_ = -1;
+        std::cout << "[QEMUSession] Plugin socket closed\n";
+    }
     return 0;
 }
 
 // ============================================================================
-//  Fault methods — identical signatures to HardwareSession
+//  Fault methods — all delegate to runCampaign
 // ============================================================================
 
-// trigger: PC == addr
-bool QEMUSession::memoryCorruptionTest(uint32_t addr,
-                                       uint8_t  injectedValue,
-                                       uint8_t  minExpected,
-                                       uint8_t  maxExpected)
-{
-    // Build fault descriptor JSON
-    std::ostringstream js;
-    js << "{"
-       << jsonStr("fault_type",      "memory_corruption") << ","
-       << jsonStr("trigger",         "pc")                << ","
-       << jsonU32("target_addr",     addr)                << ","
-       << jsonU32("inject_addr",     addr)                << ","
-       << jsonU8 ("injected_value",  injectedValue)       << ","
-       << jsonU8 ("min_expected",    minExpected)         << ","
-       << jsonU8 ("max_expected",    maxExpected)         << ","
-       << jsonStr("result_file",     resultFile_)
-       << "}";
-
-    return runCampaign(js.str());
+FaultResult QEMUSession::memoryCorruptionTest(const FaultDescriptor& desc) {
+    return runCampaign(desc);
 }
 
-// trigger: instruction count == targetCount  (newPC is the value to jump to)
-// To mirror HardwareSession::setPC we accept only a uint16_t new PC value.
-// The plugin will redirect execution when the instruction counter fires.
-// Because setPC has no "success range" concept we always return 0.
-int QEMUSession::setPC(uint32_t newPC) {
-    // Default: inject at instruction 1 (immediately)
-    // Caller can use the extended runCampaign path if a specific count matters
-    std::ostringstream js;
-    js << "{"
-       << jsonStr("fault_type",    "set_pc")           << ","
-       << jsonStr("trigger",       "insn_count")        << ","
-       << jsonU64("target_count",  1)                   << ","
-       << jsonU32("new_pc",        static_cast<uint32_t>(newPC)) << ","
-       << jsonStr("result_file",   resultFile_)
-       << "}";
-
-    return runCampaign(js.str()) ? 0 : -1;
+FaultResult QEMUSession::bitFlipTest(const FaultDescriptor& desc) {
+    return runCampaign(desc);
 }
 
-// trigger: instruction count == targetCount
-bool QEMUSession::bitFlipTest(uint32_t addr,   uint8_t  bitPos,
-                               uint8_t  minExp, uint8_t  maxExp,
-                               uint64_t targetCount)
-{
-    std::ostringstream js;
-    js << "{"
-       << jsonStr("fault_type",   "bit_flip")      << ","
-       << jsonStr("trigger",      "insn_count")     << ","
-       << jsonU64("target_count", targetCount)      << ","
-       << jsonU32("inject_addr",  addr)             << ","
-       << jsonU8 ("bit_pos",      bitPos)           << ","
-       << jsonU8 ("min_expected", minExp)           << ","
-       << jsonU8 ("max_expected", maxExp)           << ","
-       << jsonStr("result_file",  resultFile_)
-       << "}";
-
-    return runCampaign(js.str());
+FaultResult QEMUSession::instructionSkipTest(const FaultDescriptor& desc) {
+    return runCampaign(desc);
 }
 
-// trigger: PC == addr  (replace 2-byte Thumb instruction with NOP 0xBF00)
-bool QEMUSession::instructionSkipTest(uint32_t addr) {
-    std::ostringstream js;
-    js << "{"
-       << jsonStr("fault_type",  "instruction_skip") << ","
-       << jsonStr("trigger",     "pc")               << ","
-       << jsonU32("target_addr", addr)               << ","
-       << jsonU32("inject_addr", addr)               << ","
-       << jsonStr("result_file", resultFile_)
-       << "}";
-
-    return runCampaign(js.str());
+FaultResult QEMUSession::sensorCorruptionTest(const FaultDescriptor& desc) {
+    return runCampaign(desc);
 }
 
-// trigger: memory access to sensorAddr
-bool QEMUSession::sensorCorruptionTest(uint32_t sensorAddr,
-                                        uint8_t  spoofedValue,
-                                        uint8_t  minExpected,
-                                        uint8_t  maxExpected)
-{
-    std::ostringstream js;
-    js << "{"
-       << jsonStr("fault_type",     "sensor_corruption") << ","
-       << jsonStr("trigger",        "mem_access")        << ","
-       << jsonU32("sensor_addr",    sensorAddr)          << ","
-       << jsonU32("inject_addr",    sensorAddr)          << ","
-       << jsonU8 ("injected_value", spoofedValue)        << ","
-       << jsonU8 ("min_expected",   minExpected)         << ","
-       << jsonU8 ("max_expected",   maxExpected)         << ","
-       << jsonStr("result_file",    resultFile_)
-       << "}";
-
-    return runCampaign(js.str());
+FaultResult QEMUSession::setPC(const FaultDescriptor& desc) {
+    return runCampaign(desc);
 }
 
 // ============================================================================
@@ -212,19 +141,22 @@ bool QEMUSession::sensorCorruptionTest(uint32_t sensorAddr,
 
 bool QEMUSession::bindServer() {
     serverSock_ = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSock_ < 0) return false;
+    if (serverSock_ < 0) {
+        std::cerr << "[QEMUSession] socket() failed: " << strerror(errno) << "\n";
+        return false;
+    }
 
-    // Allow immediate reuse after restart
     int opt = 1;
     ::setsockopt(serverSock_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     sockaddr_in addr{};
     addr.sin_family      = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port        = htons(serverPort_);
+    addr.sin_port        = htons(cfg_.serverPort);
 
     if (::bind(serverSock_,
                reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+        std::cerr << "[QEMUSession] bind() failed: " << strerror(errno) << "\n";
         ::close(serverSock_);
         serverSock_ = -1;
         return false;
@@ -235,116 +167,174 @@ bool QEMUSession::bindServer() {
 }
 
 bool QEMUSession::launchQEMU() {
-    // qemu-system-arm                                        \
-    //   -machine <machine> -cpu <cpu>                        \
-    //   -nographic -kernel <firmware>                        \
-    //   -plugin <pluginPath>,server=localhost:<serverPort>   \
-    //   > /tmp/qemu.log 2>&1
     std::ostringstream cmd;
     cmd << "qemu-system-arm"
-        << " -machine "  << machine_
-        << " -cpu "      << cpu_
-        << " -kernel "   << firmware_
-        << " -plugin "   << pluginPath_
-                         << ",server=localhost:" << serverPort_
+        << " -machine " << cfg_.machine
+        << " -cpu "     << cfg_.cpu
+        << " -kernel "  << cfg_.firmware
+        << " -plugin "  << cfg_.pluginPath
+                        << ",server=localhost:" << cfg_.serverPort
         << " > /tmp/qemu_session.log 2>&1";
+
+    std::cout << "\n[QEMUSession] ---- Launching QEMU ----------------------------\n";
+    std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
 
     qemuPid_ = ::fork();
     if (qemuPid_ < 0) {
-        std::cerr << "[QEMUSession] fork() failed\n";
+        std::cerr << "[QEMUSession] fork() failed: " << strerror(errno) << "\n";
         return false;
     }
     if (qemuPid_ == 0) {
         ::execl("/bin/sh", "sh", "-c", cmd.str().c_str(), nullptr);
         ::_exit(127);
     }
+
+    std::cout << "[QEMUSession] QEMU process started  PID=" << qemuPid_ << "\n";
     return true;
 }
 
 bool QEMUSession::acceptPlugin() {
-    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    std::cout << "[QEMUSession] Waiting for plugin to connect"
+              << " (timeout=" << cfg_.timeoutSecs << "s)...\n";
+
+    auto deadline = std::chrono::steady_clock::now()
+                  + std::chrono::seconds(cfg_.timeoutSecs);
+
     while (std::chrono::steady_clock::now() < deadline) {
         sockaddr_in peer{};
-        socklen_t peerLen = sizeof(peer);
-        // Non-blocking accept
+        socklen_t   peerLen = sizeof(peer);
         pluginSock_ = ::accept(serverSock_,
-            reinterpret_cast<sockaddr*>(&peer), &peerLen);
-        if (pluginSock_ >= 0) 
+                               reinterpret_cast<sockaddr*>(&peer), &peerLen);
+        if (pluginSock_ >= 0) {
+            char ipbuf[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &peer.sin_addr, ipbuf, sizeof(ipbuf));
+            std::cout << "[QEMUSession] Plugin connected from "
+                      << ipbuf << ":" << ntohs(peer.sin_port) << "\n";
             return true;
-        if (errno != EAGAIN && errno != EWOULDBLOCK) break;
+        }
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cerr << "[QEMUSession] accept() error: " << strerror(errno) << "\n";
+            break;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-    std::cerr << "[QEMUSession] plugin did not connect within timeout\n";
+
+    std::cerr << "[QEMUSession] ERROR: plugin did not connect within timeout\n";
     return false;
 }
 
-bool QEMUSession::sendFaultDescriptor(const std::string& json) {
-    // Send JSON line
-    std::string line = json + "\n";
-    if (::write(pluginSock_, line.c_str(), line.size()) < 0) {
-        std::cerr << "[QEMUSession] write fault descriptor failed\n";
+bool QEMUSession::sendDescriptor(const FaultDescriptor& desc) {
+    std::cout << "\n[QEMUSession] ---- Sending fault descriptor ------------------\n";
+    std::cout << "[QEMUSession]   fault_type     : " << faultTypeName(desc.fault_type) << "\n";
+    std::cout << "[QEMUSession]   trigger        : " << triggerName(desc.trigger)      << "\n";
+    std::cout << "[QEMUSession]   target_addr    : 0x" << std::hex << desc.target_addr    << std::dec << "\n";
+    std::cout << "[QEMUSession]   inject_addr    : 0x" << std::hex << desc.inject_addr    << std::dec << "\n";
+    std::cout << "[QEMUSession]   injected_value : 0x" << std::hex << (int)desc.injected_value << std::dec << "\n";
+    std::cout << "[QEMUSession]   bit_pos        : "   << (int)desc.bit_pos        << "\n";
+    std::cout << "[QEMUSession]   new_pc         : 0x" << std::hex << desc.new_pc  << std::dec << "\n";
+    std::cout << "[QEMUSession]   sensor_addr    : 0x" << std::hex << desc.sensor_addr << std::dec << "\n";
+    std::cout << "[QEMUSession]   target_count   : "   << desc.target_count   << "\n";
+    std::cout << "[QEMUSession]   min_expected   : 0x" << std::hex << (int)desc.min_expected << std::dec << "\n";
+    std::cout << "[QEMUSession]   max_expected   : 0x" << std::hex << (int)desc.max_expected << std::dec << "\n";
+    std::cout << "[QEMUSession]   struct size    : "   << sizeof(desc) << " bytes\n";
+
+    ssize_t sent = ::write(pluginSock_, &desc, sizeof(desc));
+    if (sent != static_cast<ssize_t>(sizeof(desc))) {
+        std::cerr << "[QEMUSession] ERROR: sendDescriptor write failed ("
+                  << sent << "/" << sizeof(desc) << " bytes): "
+                  << strerror(errno) << "\n";
         return false;
     }
+    std::cout << "[QEMUSession] Descriptor written to socket (" << sent << " bytes)\n";
 
-    // Wait for "READY\n" ACK from plugin (means it parsed the descriptor)
-    char buf[64] = {0};
-    ssize_t n = ::read(pluginSock_, buf, sizeof(buf) - 1);
-    if (n <= 0) {
-        std::cerr << "[QEMUSession] no ACK from plugin\n";
+    // Wait for ACK byte
+    std::cout << "[QEMUSession] Waiting for ACK from plugin...\n";
+    uint8_t ack = 0;
+    ssize_t n   = ::read(pluginSock_, &ack, 1);
+    if (n != 1 || ack != ACK_READY) {
+        std::cerr << "[QEMUSession] ERROR: bad ACK (got 0x"
+                  << std::hex << (int)ack << std::dec
+                  << ", expected 0xAC)\n";
         return false;
     }
-
-    return std::string(buf, n).find("READY") != std::string::npos;
+    std::cout << "[QEMUSession] ACK received (0xAC) — plugin is ready\n";
+    return true;
 }
 
-bool QEMUSession::waitForResult(int timeoutSeconds) {
+FaultResult QEMUSession::recvResult() {
+    FaultResult result{};
+
+    std::cout << "\n[QEMUSession] ---- Waiting for QEMU to exit ------------------\n";
+
     auto deadline = std::chrono::steady_clock::now()
-                  + std::chrono::seconds(timeoutSeconds);
+                  + std::chrono::seconds(cfg_.timeoutSecs);
     int status = 0;
+
     while (std::chrono::steady_clock::now() < deadline) {
         pid_t r = ::waitpid(qemuPid_, &status, WNOHANG);
-        if (r > 0) { qemuPid_ = -1; break; }
+        if (r > 0) {
+            std::cout << "[QEMUSession] QEMU exited  PID=" << r
+                      << "  status=" << status << "\n";
+            qemuPid_ = -1;
+            break;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+
     if (qemuPid_ > 0) {
-        std::cerr << "[QEMUSession] QEMU timed out — killing\n";
+        std::cerr << "[QEMUSession] ERROR: QEMU timed out after "
+                  << cfg_.timeoutSecs << "s — killing PID=" << qemuPid_ << "\n";
         ::kill(qemuPid_, SIGKILL);
         ::waitpid(qemuPid_, &status, 0);
         qemuPid_ = -1;
-        return false;
+        return result;
     }
-    // Minimal parse: look for "result":"PASSED"
-    std::string content((std::istreambuf_iterator<char>(f)),
-                         std::istreambuf_iterator<char>());
 
-    return content.find("\"PASSED\"") != std::string::npos;
+    // Read FaultResult binary
+    std::cout << "[QEMUSession] Reading FaultResult from plugin ("
+              << sizeof(result) << " bytes)...\n";
+
+    ssize_t n = ::read(pluginSock_, &result, sizeof(result));
+    if (n != static_cast<ssize_t>(sizeof(result))) {
+        std::cerr << "[QEMUSession] ERROR: recvResult short read ("
+                  << n << "/" << sizeof(result) << " bytes)\n";
+        return result;
+    }
+
+    std::cout << "\n[QEMUSession] ---- Campaign result ---------------------------\n";
+    std::cout << "[QEMUSession]   injected   : " << (result.injected ? "YES" : "NO")    << "\n";
+    std::cout << "[QEMUSession]   passed     : " << (result.passed   ? "PASSED" : "FAILED") << "\n";
+    std::cout << "[QEMUSession]   insn_count : " << result.insn_count << "\n";
+    std::cout << "[QEMUSession] ============================================\n\n";
+
+    return result;
 }
 
-bool QEMUSession::runCampaign(const std::string& faultJson) {
-    // 1. Launch QEMU — it will load the plugin, plugin will connect to us
-    if (!launchQEMU()) return false;
+// ── One-shot wrapper used by every fault method ───────────────────────────────
+FaultResult QEMUSession::runCampaign(const FaultDescriptor& desc) {
+    FaultResult failure{};
 
-    // Small delay to let QEMU initialise before accepting
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    auto cleanup = [&]() {
+        if (qemuPid_ > 0) {
+            std::cout << "[QEMUSession] Cleanup: killing QEMU PID=" << qemuPid_ << "\n";
+            ::kill(qemuPid_, SIGTERM);
+            int st; ::waitpid(qemuPid_, &st, 0);
+            qemuPid_ = -1;
+        }
+        if (pluginSock_ >= 0) {
+            ::close(pluginSock_);
+            pluginSock_ = -1;
+            std::cout << "[QEMUSession] Cleanup: plugin socket closed\n";
+        }
+    };
 
-    // 2. Accept plugin connection
-    if (!acceptPlugin()) {
-        ::kill(qemuPid_, SIGTERM);
-        int st; ::waitpid(qemuPid_, &st, 0);
-        qemuPid_ = -1;
-        return false;
-    }
+    if (!launchQEMU())         { cleanup(); return failure; }
+    if (!acceptPlugin())       { cleanup(); return failure; }
+    if (!sendDescriptor(desc)) { cleanup(); return failure; }
 
-    // 3. Send fault descriptor; plugin ACKs with "READY"
-    if (!sendFaultDescriptor(faultJson)) {
-        ::kill(qemuPid_, SIGTERM);
-        int st; ::waitpid(qemuPid_, &st, 0);
-        qemuPid_ = -1;
-        return false;
-    }
+    std::cout << "[QEMUSession] Fault descriptor sent — QEMU is now executing...\n";
 
-    std::cout << "[QEMUSession] Fault injected, waiting for QEMU to finish...\n";
-
-    // 4. Wait for QEMU to exit and read the result
-    return waitForResult();
+    FaultResult result = recvResult();
+    cleanup();
+    return result;
 }
