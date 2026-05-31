@@ -115,7 +115,7 @@ private:
     bool sendFaultDescriptor(const std::string& json);
 
     // Block until QEMU exits; parse campaign_result.json; return pass/fail
-    bool waitForResult();
+    bool waitForResult(int timeoutSeconds);
 
     // One-shot wrapper used by every fault method:
     //   launchQEMU → acceptPlugin → sendFaultDescriptor → waitForResult

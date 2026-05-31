@@ -262,23 +262,20 @@ bool QEMUSession::launchQEMU() {
 }
 
 bool QEMUSession::acceptPlugin() {
-    // Set a 5-second timeout on the accept
-    timeval tv{ .tv_sec = 5, .tv_usec = 0 };
-    ::setsockopt(serverSock_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-
-    sockaddr_in peer{};
-    socklen_t   peerLen = sizeof(peer);
-    pluginSock_ = ::accept(serverSock_,
-                           reinterpret_cast<sockaddr*>(&peer), &peerLen);
-    if (pluginSock_ < 0) {
-        std::cerr << "[QEMUSession] accept() timed out — plugin did not connect\n";
-        return false;
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (std::chrono::steady_clock::now() < deadline) {
+        sockaddr_in peer{};
+        socklen_t peerLen = sizeof(peer);
+        // Non-blocking accept
+        pluginSock_ = ::accept(serverSock_,
+            reinterpret_cast<sockaddr*>(&peer), &peerLen);
+        if (pluginSock_ >= 0) 
+            return true;
+        if (errno != EAGAIN && errno != EWOULDBLOCK) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-
-    // Disable Nagle for low-latency exchange
-    int flag = 1;
-    ::setsockopt(pluginSock_, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
-    return true;
+    std::cerr << "[QEMUSession] plugin did not connect within timeout\n";
+    return false;
 }
 
 bool QEMUSession::sendFaultDescriptor(const std::string& json) {
@@ -300,22 +297,22 @@ bool QEMUSession::sendFaultDescriptor(const std::string& json) {
     return std::string(buf, n).find("READY") != std::string::npos;
 }
 
-bool QEMUSession::waitForResult() {
-    // Block until QEMU exits
+bool QEMUSession::waitForResult(int timeoutSeconds) {
+    auto deadline = std::chrono::steady_clock::now()
+                  + std::chrono::seconds(timeoutSeconds);
     int status = 0;
-    ::waitpid(qemuPid_, &status, 0);
-    qemuPid_ = -1;
-
-    // Close the plugin socket — QEMU is gone
-    if (pluginSock_ >= 0) { ::close(pluginSock_); pluginSock_ = -1; }
-
-    // Parse campaign_result.json written by the plugin
-    std::ifstream f(resultFile_);
-    if (!f.is_open()) {
-        std::cerr << "[QEMUSession] result file not found: " << resultFile_ << "\n";
+    while (std::chrono::steady_clock::now() < deadline) {
+        pid_t r = ::waitpid(qemuPid_, &status, WNOHANG);
+        if (r > 0) { qemuPid_ = -1; break; }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    if (qemuPid_ > 0) {
+        std::cerr << "[QEMUSession] QEMU timed out — killing\n";
+        ::kill(qemuPid_, SIGKILL);
+        ::waitpid(qemuPid_, &status, 0);
+        qemuPid_ = -1;
         return false;
     }
-
     // Minimal parse: look for "result":"PASSED"
     std::string content((std::istreambuf_iterator<char>(f)),
                          std::istreambuf_iterator<char>());
