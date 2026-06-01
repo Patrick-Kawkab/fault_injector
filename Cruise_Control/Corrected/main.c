@@ -23,7 +23,7 @@ void     PWM_SetDuty(uint32_t duty);
 void     led_set(uint8_t red, uint8_t green, uint8_t blue);
 uint8_t  button_pressed(uint32_t port_data, uint8_t pin_mask);
 uint32_t ADC_ReadThrottle(void);
-void     GPIOD_Handler(void);
+void     GPIOPortD_Handler(void);
 void     vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName);
 void     vEncoderTask(void *pvParameters);
 void     vCruiseTask(void *pvParameters);
@@ -80,7 +80,7 @@ SemaphoreHandle_t       xStateMutex;
 //  Delay
 // ─────────────────────────────────────────────
 void delay_ms(uint32_t ms) {
-    uint32_t count = ms * (16000000 / 3000);
+    uint32_t count = ms * (80000000 / 3000);
     while (count--);
 }
 
@@ -288,7 +288,7 @@ void led_set(uint8_t red, uint8_t green, uint8_t blue) {
 // ─────────────────────────────────────────────
 //  Encoder ISR
 // ─────────────────────────────────────────────
-void GPIOD_Handler(void) {
+void GPIOPortD_Handler(void) {
     if (GPIO_PORTD_MIS_R & (1 << 0)) {
         encoder_count++;
         GPIO_PORTD_ICR_R |= (1 << 0);
