@@ -48,7 +48,7 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 #define ENCODER_PPR             11     // Encoder pulses per revolution
 #define SAMPLE_PERIOD_MS        100    // Encoder sampling period in ms
 
-#define ZERO_RPM_LIMIT          30     // 30 * 100ms = about 3 seconds before auto-cancel
+#define ZERO_RPM_LIMIT          0.16   // 30 * 100ms = about 3 seconds before auto-cancel
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
 
