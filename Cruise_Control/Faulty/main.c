@@ -50,6 +50,8 @@ void vLCDTask(void *pvParameters);                         // LCD display update
 
 #define BUTTON_RELEASE_TIMEOUT  500    // Max time to wait for button release before continuing
 
+#define WHEEL_DIAMETER_M        0.065f //Wheel diameter is 6.5 cm
+#define WHEEL_CIRCUMFERENCE     (3.14159f * WHEEL_DIAMETER_M)
 // ============================================================
 // LCD pin definitions used by this exact code
 // RS=PC4, E=PC5, D4=PC6, D5=PC7, D6=PB4, D7=PB5
@@ -523,10 +525,12 @@ void vLCDTask(void *pvParameters) {
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else { continue; }                        // Skip update if mutex unavailable
 
+        uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
+
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
-        uint32_to_str(rpm, num_buf, 4);             // Format RPM number
+        uint32_to_str(kph, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
-        LCD_String(" RPM");                        // Print RPM label
+        LCD_String(" KPH");                        // Print RPM label
 
         LCD_SetCursor(1, 7);                        // Move after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM
