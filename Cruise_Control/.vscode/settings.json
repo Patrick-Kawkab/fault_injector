@@ -1,3 +1,4 @@
 {
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "cmake.sourceDirectory": "/home/steven/Desktop/fault_injector/Cruise_Control/Corrected/FreeRTOS/include"
 }

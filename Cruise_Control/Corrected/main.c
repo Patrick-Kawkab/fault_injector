@@ -52,6 +52,8 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
 
+#define WHEEL_DIAMETER_M        0.065f //Wheel diameter is 6.5 cm
+#define WHEEL_CIRCUMFERENCE     (3.14159f * WHEEL_DIAMETER_M)
 // ============================================================
 // LCD pin definitions
 // Note: PC4=RS, PC5=E, PC6=D4, PC7=D5, PB4=D6, PB5=D7
@@ -575,12 +577,12 @@ void vLCDTask(void *pvParameters) {
         uint32_t rpm;
         uint32_t target;
         CruiseState state;
-
-        if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Read RPM safely
-            rpm = current_rpm;                      // Snapshot current measured RPM
-            xSemaphoreGive(xRPMMutex);              // Release RPM mutex
+        
+        if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            rpm = current_rpm;
+            xSemaphoreGive(xRPMMutex);
         } else {
-            continue;                               // Skip update if mutex unavailable
+            continue;
         }
 
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Read shared state safely
@@ -590,11 +592,12 @@ void vLCDTask(void *pvParameters) {
         } else {
             continue;                               // Skip update if mutex unavailable
         }
+        uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
 
         LCD_SetCursor(0, 7);                        // Move cursor after " Speed:"
-        uint32_to_str(rpm, num_buf, 4);             // Format RPM into 4-character field
+        uint32_to_str(kph, num_buf, 4);             // Format RPM into 4-character field
         LCD_String(num_buf);                        // Print current RPM
-        LCD_String(" RPM");                        // Print unit label
+        LCD_String(" KPH");                         // Print unit label
 
         LCD_SetCursor(1, 7);                        // Move cursor after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM into 4-character field
