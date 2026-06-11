@@ -22,17 +22,17 @@ INCLUDES = -I. \
            -I$(PORT_DIR)
 
 # ── Compiler Flags ─────────────────────────────
-CFLAGS = -mthumb \
-         -mcpu=cortex-m4 \
-         -mfpu=fpv4-sp-d16 \
-         -mfloat-abi=hard \
-         -O0 \
-         -std=c99 \
-         -g \
-         -Wall \
-         -ffunction-sections \
-         -fdata-sections \
-         $(INCLUDES)
+CFLAGS  = -mthumb \
+          -mcpu=cortex-m4 \
+          -mfpu=fpv4-sp-d16 \
+          -mfloat-abi=hard \
+          -O0 \
+          -std=c99 \
+          -g \
+          -Wall \
+          -ffunction-sections \
+          -fdata-sections \
+          $(INCLUDES)
 
 # ── Linker Flags ───────────────────────────────
 LDFLAGS = -mthumb \
@@ -40,25 +40,24 @@ LDFLAGS = -mthumb \
           -mfpu=fpv4-sp-d16 \
           -mfloat-abi=hard \
           -T tm4c123.ld \
-          --specs=nosys.specs \
+          -specs=nosys.specs \
           -Wl,--gc-sections \
-          -Wl,-Map=main.map   # generates a map file — useful for debugging
+          -Wl,-Map=main.map
 
 # ── Targets ────────────────────────────────────
 all: main.bin
 
 main.elf: $(SRCS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	arm-none-eabi-size $@
 
 main.bin: main.elf
 	$(OBJCOPY) -O binary $< $@
 
 flash: main.bin
-	lm4flash $
-
-# Shows stack/heap usage per function — useful for tuning stack sizes
-size: main.elf
-	arm-none-eabi-size $
+	sudo lm4flash main.bin
 
 clean:
-	rm -f *.elf *.bin *.d *.map
+	rm -f *.elf *.bin *.map
+
+.PHONY: all clean flash

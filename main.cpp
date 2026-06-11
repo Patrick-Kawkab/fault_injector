@@ -1,5 +1,5 @@
 #define CONFIG_JSON_PATH   "./Orchestrator/Input.json"
-#define ELF_FILE_DIR       "./tiva_c/"
+#define ELF_FILE_DIR       "./Cruise_Control/Corrected"
 
 #include <iostream>
 #include <fstream>

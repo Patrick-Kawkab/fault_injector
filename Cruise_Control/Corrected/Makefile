@@ -8,7 +8,7 @@ HEAP_DIR     = $(FREERTOS_DIR)/portable/MemMang
 
 # ── Source Files ───────────────────────────────
 SRCS = main.c \
-       vectors.c \
+       startup.c \
        $(FREERTOS_DIR)/tasks.c \
        $(FREERTOS_DIR)/queue.c \
        $(FREERTOS_DIR)/list.c \
@@ -40,7 +40,7 @@ LDFLAGS = -mthumb \
           -mfpu=fpv4-sp-d16 \
           -mfloat-abi=hard \
           -T tm4c123.ld \
-          --specs=nosys.specs \
+          -specs=nosys.specs \
           -Wl,--gc-sections \
           -Wl,-Map=main.map
 
