@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"              // FreeRTOS core definitions
 #include "task.h"                  // Task creation / scheduling APIs
 #include "semphr.h"                // Mutex / semaphore APIs
+#include "uart.h"                  // UART header file for sending and recieving from QEMU
 
 // ============================================================
 // Forward declarations

@@ -1,8 +1,9 @@
-#include <stdint.h>                 // Standard integer types like uint32_t
+#include <stdint.h>                // Standard integer types like uint32_t
 #include "tm4c123gh6pm.h"          // TM4C123 register definitions
 #include "FreeRTOS.h"              // FreeRTOS base definitions
 #include "task.h"                  // FreeRTOS task functions
 #include "semphr.h"                // FreeRTOS semaphore / mutex functions
+#include "uart.h"                  // UART header file for sending and recieving from QEMU
 
 // ============================================================
 // Forward declarations
