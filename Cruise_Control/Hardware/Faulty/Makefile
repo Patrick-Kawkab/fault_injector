@@ -2,7 +2,7 @@ CC      = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 
 # ── Paths ──────────────────────────────────────
-FREERTOS_DIR = ../Includes/FreeRTOS
+FREERTOS_DIR = ../../Includes/FreeRTOS
 PORT_DIR     = $(FREERTOS_DIR)/portable/GCC/ARM_CM4F
 HEAP_DIR     = $(FREERTOS_DIR)/portable/MemMang
 
