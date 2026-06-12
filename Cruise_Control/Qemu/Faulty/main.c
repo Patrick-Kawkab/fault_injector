@@ -371,6 +371,10 @@ void vEncoderTask(void *pvParameters) {
 
         uint32_t rpm = (count * 60000UL) / (ENCODER_PPR * SAMPLE_PERIOD_MS); // Convert pulse count to RPM
 
+        #ifdef USE_QEMU_UART
+        uart_puts("[ENC] RPM: "); uart_udec(rpm); uart_nl();    // Print on the QEMU terminal the current rpm
+        #endif
+
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Lock RPM shared variable
             current_rpm = rpm;                      // Publish new measured RPM
             xSemaphoreGive(xRPMMutex);              // Unlock RPM mutex
@@ -469,6 +473,11 @@ void vManualTask(void *pvParameters) {
         if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 4))) { // If PF4 pressed -> enable cruise mode
             if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
                 cruise_state = STATE_ACTIVE;         // Turn cruise on
+
+                #ifdef USE_QEMU_UART
+                uart_puts("[MONITOR][MANUAL] Cruise ACTIVATED"); uart_nl(); // Print on the QEMU terminal that the cruise control in on
+                #endif
+
                 xSemaphoreGive(xStateMutex);         // Release mutex
             }
             led_set(0, 1, 0);                        // Green LED to indicate cruise enabled
@@ -480,6 +489,11 @@ void vManualTask(void *pvParameters) {
         if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 0))) { // If PF0 pressed -> disable cruise mode
             if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
                 cruise_state = STATE_OFF;            // Turn cruise off
+
+                #ifdef USE_QEMU_UART
+                uart_puts("[MONITOR][MANUAL] Cruise DEACTIVATED"); uart_nl();   // Print on the QEMU terminal that the cruise control in off
+                #endif
+
                 xSemaphoreGive(xStateMutex);         // Release mutex
             }
             PWM_SetDuty(THROTTLE_OFF);               // Immediately cut motor throttle
@@ -569,14 +583,23 @@ void vApplicationMallocFailedHook(void) {
 // ============================================================
 int main(void) {
     GPIO_Init();                                    // Initialize GPIO pins
+    uart_puts("[MONITOR] GPIO initialized")
+
     ADC_Init();                                     // Initialize ADC for throttle potentiometer
+    uart_puts("[MONITOR] ADC initialized")
+    
     PWM_Init();                                     // Initialize PWM for motor control
-    LCD_Init();                                     // Initialize LCD before scheduler starts
+    uart_puts("[MONITOR] PWM initialized")
+
+    #ifndef USE_QEMU_UART
+        LCD_Init();
+    #endif
 
     led_set(1, 0, 0);                               // Red LED at startup = system initially OFF
 
     xRPMMutex   = xSemaphoreCreateMutex();          // Create mutex for RPM shared variable
     xStateMutex = xSemaphoreCreateMutex();          // Create mutex for state shared variables
+    uart_puts("[MONITOR] Mutex Ready")
 
     configASSERT(xRPMMutex   != NULL);              // Catch RPM mutex creation failure in debug
     configASSERT(xStateMutex != NULL);              // Catch state mutex creation failure in debug
@@ -585,6 +608,8 @@ int main(void) {
     configASSERT(xTaskCreate(vCruiseTask,  "Cruise",  256, NULL, 2, NULL) == pdPASS); // Create cruise task
     configASSERT(xTaskCreate(vManualTask,  "Manual",  256, NULL, 1, NULL) == pdPASS); // Create manual input task
     configASSERT(xTaskCreate(vLCDTask,     "LCD",     384, NULL, 1, NULL) == pdPASS); // Create LCD display task
+
+    uart_puts("[MONITOR] Tasks Ready")
 
     vTaskStartScheduler();                          // Start FreeRTOS scheduler; tasks begin running
     while (1);                                      // Should never get here unless scheduler fails

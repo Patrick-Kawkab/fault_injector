@@ -16,6 +16,7 @@
 /* PL011 register offsets */
 #define UART_DR      (*(volatile uint32_t *)(UART0_BASE + 0x000))  /* data        */
 #define UART_FR      (*(volatile uint32_t *)(UART0_BASE + 0x018))  /* flag        */
+
 #ifndef UART_FR_TXFF
 #define UART_FR_TXFF (1u << 5)                                     /* TX FIFO full */
 #endif
