@@ -447,7 +447,7 @@ void vEncoderTask(void *pvParameters) {
 #endif
 
 #ifdef USE_QEMU_UART
-        uart_puts("[MONITOR][ENC] RPM: ");
+        uart_puts("[MONITOR][ENC] KPH: ");
         uart_udec(rpm);
         uart_nl();
 #endif

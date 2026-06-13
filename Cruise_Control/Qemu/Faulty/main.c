@@ -428,7 +428,7 @@ void vEncoderTask(void *pvParameters) {
         }
 
         rpm = sim_rpm;
-        uart_puts("[MONITOR][ENC] RPM: "); uart_udec(rpm); uart_nl();
+        uart_puts("[MONITOR][ENC] KPH: "); uart_udec(rpm); uart_nl();
 #else
         uint32_t count;
         taskENTER_CRITICAL();
@@ -617,6 +617,7 @@ void vManualTask(void *pvParameters) {
 //  - Current RPM on row 1
 //  - Target RPM and cruise state on row 2
 // ============================================================
+#ifndef USE_QEMU_UART
 void vLCDTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount(); // Save starting tick for periodic scheduling
     char num_buf[5];                                // 4 digits + null terminator
@@ -644,7 +645,6 @@ void vLCDTask(void *pvParameters) {
 
         uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
 
-        #ifndef USE_QEMU_UART
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
         uint32_to_str(kph, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
@@ -654,9 +654,10 @@ void vLCDTask(void *pvParameters) {
         uint32_to_str(target, num_buf, 4);          // Format target RPM
         LCD_String(num_buf);                        // Print target RPM
         LCD_String(state == STATE_ACTIVE ? " ACT" : " OFF"); // Print mode text
-        #endif
+
     }
 }
+#endif
 
 // ============================================================
 // FreeRTOS stack overflow hook

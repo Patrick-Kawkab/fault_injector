@@ -11,7 +11,7 @@ Archive member included to satisfy reference by file (symbol)
 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-init.o)
                               /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o (__libc_init_array)
 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
-                              /tmp/ccC4QQij.o (memcpy)
+                              /tmp/cc3W7Xrs.o (memcpy)
 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
                               /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o (memset)
 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-__atexit.o)
@@ -51,155 +51,153 @@ Discarded input sections
  .debug_str     0x0000000000000000       0x98 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
  .ARM.attributes
                 0x0000000000000000       0x1c /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
- .text          0x0000000000000000        0x0 /tmp/ccdtfcnl.o
- .data          0x0000000000000000        0x0 /tmp/ccdtfcnl.o
- .bss           0x0000000000000000        0x0 /tmp/ccdtfcnl.o
+ .text          0x0000000000000000        0x0 /tmp/ccNBUCrz.o
+ .data          0x0000000000000000        0x0 /tmp/ccNBUCrz.o
+ .bss           0x0000000000000000        0x0 /tmp/ccNBUCrz.o
  .text.delay_ms
-                0x0000000000000000       0x2e /tmp/ccdtfcnl.o
+                0x0000000000000000       0x2e /tmp/ccNBUCrz.o
  .text.ADC_ReadThrottle
-                0x0000000000000000       0x60 /tmp/ccdtfcnl.o
+                0x0000000000000000       0x60 /tmp/ccNBUCrz.o
  .text.uint32_to_str
-                0x0000000000000000       0xac /tmp/ccdtfcnl.o
+                0x0000000000000000       0xac /tmp/ccNBUCrz.o
  .text.button_pressed
-                0x0000000000000000       0x38 /tmp/ccdtfcnl.o
- .text.vLCDTask
-                0x0000000000000000       0xe4 /tmp/ccdtfcnl.o
+                0x0000000000000000       0x38 /tmp/ccNBUCrz.o
  .text.vApplicationMallocFailedHook
-                0x0000000000000000       0x10 /tmp/ccdtfcnl.o
- .text          0x0000000000000000        0x0 /tmp/cc7mscBm.o
- .data          0x0000000000000000        0x0 /tmp/cc7mscBm.o
- .bss           0x0000000000000000        0x0 /tmp/cc7mscBm.o
- .text          0x0000000000000000        0x0 /tmp/ccUUg9Ka.o
- .data          0x0000000000000000        0x0 /tmp/ccUUg9Ka.o
- .bss           0x0000000000000000        0x0 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x10 /tmp/ccNBUCrz.o
+ .text          0x0000000000000000        0x0 /tmp/ccendPHQ.o
+ .data          0x0000000000000000        0x0 /tmp/ccendPHQ.o
+ .bss           0x0000000000000000        0x0 /tmp/ccendPHQ.o
+ .text          0x0000000000000000        0x0 /tmp/cct7UQjl.o
+ .data          0x0000000000000000        0x0 /tmp/cct7UQjl.o
+ .bss           0x0000000000000000        0x0 /tmp/cct7UQjl.o
  .text.vTaskDelay
-                0x0000000000000000       0x68 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x68 /tmp/cct7UQjl.o
  .text.vTaskSuspend
-                0x0000000000000000      0x144 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x144 /tmp/cct7UQjl.o
  .text.prvTaskIsTaskSuspended
-                0x0000000000000000       0x8c /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x8c /tmp/cct7UQjl.o
  .text.vTaskResume
-                0x0000000000000000      0x110 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x110 /tmp/cct7UQjl.o
  .text.xTaskResumeFromISR
-                0x0000000000000000      0x140 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x140 /tmp/cct7UQjl.o
  .text.vTaskEndScheduler
-                0x0000000000000000       0x30 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x30 /tmp/cct7UQjl.o
  .text.xTaskGetTickCountFromISR
-                0x0000000000000000       0x24 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x24 /tmp/cct7UQjl.o
  .text.uxTaskGetNumberOfTasks
-                0x0000000000000000       0x18 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x18 /tmp/cct7UQjl.o
  .text.pcTaskGetName
-                0x0000000000000000       0x48 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x48 /tmp/cct7UQjl.o
  .text.xTaskCatchUpTicks
-                0x0000000000000000       0x58 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x58 /tmp/cct7UQjl.o
  .text.vTaskPlaceOnUnorderedEventList
-                0x0000000000000000       0xac /tmp/ccUUg9Ka.o
+                0x0000000000000000       0xac /tmp/cct7UQjl.o
  .text.vTaskRemoveFromUnorderedEventList
-                0x0000000000000000      0x184 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x184 /tmp/cct7UQjl.o
  .text.vTaskSetTimeOutState
-                0x0000000000000000       0x4c /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x4c /tmp/cct7UQjl.o
  .text.prvTaskCheckFreeStackSpace
-                0x0000000000000000       0x36 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x36 /tmp/cct7UQjl.o
  .text.uxTaskGetStackHighWaterMark
-                0x0000000000000000       0x34 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x34 /tmp/cct7UQjl.o
  .text.xTaskGetCurrentTaskHandle
-                0x0000000000000000       0x20 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x20 /tmp/cct7UQjl.o
  .text.xTaskGetCurrentTaskHandleForCore
-                0x0000000000000000       0x30 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x30 /tmp/cct7UQjl.o
  .text.uxTaskResetEventItemValue
-                0x0000000000000000       0x30 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x30 /tmp/cct7UQjl.o
  .text.ulTaskGenericNotifyTake
-                0x0000000000000000       0xfc /tmp/ccUUg9Ka.o
+                0x0000000000000000       0xfc /tmp/cct7UQjl.o
  .text.xTaskGenericNotifyWait
-                0x0000000000000000      0x12c /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x12c /tmp/cct7UQjl.o
  .text.xTaskGenericNotify
-                0x0000000000000000      0x258 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x258 /tmp/cct7UQjl.o
  .text.xTaskGenericNotifyFromISR
-                0x0000000000000000      0x2c8 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x2c8 /tmp/cct7UQjl.o
  .text.vTaskGenericNotifyGiveFromISR
-                0x0000000000000000      0x214 /tmp/ccUUg9Ka.o
+                0x0000000000000000      0x214 /tmp/cct7UQjl.o
  .text.xTaskGenericNotifyStateClear
-                0x0000000000000000       0x74 /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x74 /tmp/cct7UQjl.o
  .text.ulTaskGenericNotifyValueClear
-                0x0000000000000000       0x7c /tmp/ccUUg9Ka.o
+                0x0000000000000000       0x7c /tmp/cct7UQjl.o
  .text.vTaskResetState
-                0x0000000000000000       0x98 /tmp/ccUUg9Ka.o
- .text          0x0000000000000000        0x0 /tmp/ccC4QQij.o
- .data          0x0000000000000000        0x0 /tmp/ccC4QQij.o
- .bss           0x0000000000000000        0x0 /tmp/ccC4QQij.o
+                0x0000000000000000       0x98 /tmp/cct7UQjl.o
+ .text          0x0000000000000000        0x0 /tmp/cc3W7Xrs.o
+ .data          0x0000000000000000        0x0 /tmp/cc3W7Xrs.o
+ .bss           0x0000000000000000        0x0 /tmp/cc3W7Xrs.o
  .text.xQueueGenericSendFromISR
-                0x0000000000000000      0x164 /tmp/ccC4QQij.o
+                0x0000000000000000      0x164 /tmp/cc3W7Xrs.o
  .text.xQueueGiveFromISR
-                0x0000000000000000      0x148 /tmp/ccC4QQij.o
+                0x0000000000000000      0x148 /tmp/cc3W7Xrs.o
  .text.xQueueReceive
-                0x0000000000000000      0x190 /tmp/ccC4QQij.o
+                0x0000000000000000      0x190 /tmp/cc3W7Xrs.o
  .text.xQueuePeek
-                0x0000000000000000      0x194 /tmp/ccC4QQij.o
+                0x0000000000000000      0x194 /tmp/cc3W7Xrs.o
  .text.xQueueReceiveFromISR
-                0x0000000000000000      0x12e /tmp/ccC4QQij.o
+                0x0000000000000000      0x12e /tmp/cc3W7Xrs.o
  .text.xQueuePeekFromISR
-                0x0000000000000000       0xd2 /tmp/ccC4QQij.o
+                0x0000000000000000       0xd2 /tmp/cc3W7Xrs.o
  .text.uxQueueMessagesWaiting
-                0x0000000000000000       0x3c /tmp/ccC4QQij.o
+                0x0000000000000000       0x3c /tmp/cc3W7Xrs.o
  .text.uxQueueSpacesAvailable
-                0x0000000000000000       0x46 /tmp/ccC4QQij.o
+                0x0000000000000000       0x46 /tmp/cc3W7Xrs.o
  .text.uxQueueMessagesWaitingFromISR
-                0x0000000000000000       0x3c /tmp/ccC4QQij.o
+                0x0000000000000000       0x3c /tmp/cc3W7Xrs.o
  .text.vQueueDelete
-                0x0000000000000000       0x36 /tmp/ccC4QQij.o
+                0x0000000000000000       0x36 /tmp/cc3W7Xrs.o
  .text.uxQueueGetQueueItemSize
-                0x0000000000000000       0x18 /tmp/ccC4QQij.o
+                0x0000000000000000       0x18 /tmp/cc3W7Xrs.o
  .text.uxQueueGetQueueLength
-                0x0000000000000000       0x18 /tmp/ccC4QQij.o
+                0x0000000000000000       0x18 /tmp/cc3W7Xrs.o
  .text.prvCopyDataFromQueue
-                0x0000000000000000       0x4c /tmp/ccC4QQij.o
+                0x0000000000000000       0x4c /tmp/cc3W7Xrs.o
  .text.xQueueIsQueueEmptyFromISR
-                0x0000000000000000       0x48 /tmp/ccC4QQij.o
+                0x0000000000000000       0x48 /tmp/cc3W7Xrs.o
  .text.xQueueIsQueueFullFromISR
-                0x0000000000000000       0x4c /tmp/ccC4QQij.o
- .text          0x0000000000000000        0x0 /tmp/ccKQ68KS.o
- .data          0x0000000000000000        0x0 /tmp/ccKQ68KS.o
- .bss           0x0000000000000000        0x0 /tmp/ccKQ68KS.o
+                0x0000000000000000       0x4c /tmp/cc3W7Xrs.o
+ .text          0x0000000000000000        0x0 /tmp/ccArH7EU.o
+ .data          0x0000000000000000        0x0 /tmp/ccArH7EU.o
+ .bss           0x0000000000000000        0x0 /tmp/ccArH7EU.o
  .text.vListInsertEnd
-                0x0000000000000000       0x48 /tmp/ccKQ68KS.o
- .text          0x0000000000000000        0x0 /tmp/ccfLMsqi.o
- .data          0x0000000000000000        0x0 /tmp/ccfLMsqi.o
- .bss           0x0000000000000000        0x0 /tmp/ccfLMsqi.o
- .debug_info    0x0000000000000000       0x6b /tmp/ccfLMsqi.o
- .debug_abbrev  0x0000000000000000       0x26 /tmp/ccfLMsqi.o
+                0x0000000000000000       0x48 /tmp/ccArH7EU.o
+ .text          0x0000000000000000        0x0 /tmp/ccwJSFQY.o
+ .data          0x0000000000000000        0x0 /tmp/ccwJSFQY.o
+ .bss           0x0000000000000000        0x0 /tmp/ccwJSFQY.o
+ .debug_info    0x0000000000000000       0x6b /tmp/ccwJSFQY.o
+ .debug_abbrev  0x0000000000000000       0x26 /tmp/ccwJSFQY.o
  .debug_aranges
-                0x0000000000000000       0x18 /tmp/ccfLMsqi.o
- .debug_line    0x0000000000000000       0x1d /tmp/ccfLMsqi.o
- .debug_str     0x0000000000000000      0x1b0 /tmp/ccfLMsqi.o
- .comment       0x0000000000000000       0x34 /tmp/ccfLMsqi.o
+                0x0000000000000000       0x18 /tmp/ccwJSFQY.o
+ .debug_line    0x0000000000000000       0x1d /tmp/ccwJSFQY.o
+ .debug_str     0x0000000000000000      0x1b0 /tmp/ccwJSFQY.o
+ .comment       0x0000000000000000       0x34 /tmp/ccwJSFQY.o
  .ARM.attributes
-                0x0000000000000000       0x39 /tmp/ccfLMsqi.o
- .text          0x0000000000000000        0x0 /tmp/ccP4Uwz7.o
- .data          0x0000000000000000        0x0 /tmp/ccP4Uwz7.o
- .bss           0x0000000000000000        0x0 /tmp/ccP4Uwz7.o
+                0x0000000000000000       0x39 /tmp/ccwJSFQY.o
+ .text          0x0000000000000000        0x0 /tmp/ccgGkEZB.o
+ .data          0x0000000000000000        0x0 /tmp/ccgGkEZB.o
+ .bss           0x0000000000000000        0x0 /tmp/ccgGkEZB.o
  .rodata.pcInterruptPriorityRegisters
-                0x0000000000000000        0x4 /tmp/ccP4Uwz7.o
+                0x0000000000000000        0x4 /tmp/ccgGkEZB.o
  .text.vPortEndScheduler
-                0x0000000000000000       0x38 /tmp/ccP4Uwz7.o
+                0x0000000000000000       0x38 /tmp/ccgGkEZB.o
  .text.vPortValidateInterruptPriority
-                0x0000000000000000       0x80 /tmp/ccP4Uwz7.o
- .text          0x0000000000000000        0x0 /tmp/ccBnnVzn.o
- .data          0x0000000000000000        0x0 /tmp/ccBnnVzn.o
- .bss           0x0000000000000000        0x0 /tmp/ccBnnVzn.o
+                0x0000000000000000       0x80 /tmp/ccgGkEZB.o
+ .text          0x0000000000000000        0x0 /tmp/ccKTx1rI.o
+ .data          0x0000000000000000        0x0 /tmp/ccKTx1rI.o
+ .bss           0x0000000000000000        0x0 /tmp/ccKTx1rI.o
  .rodata.xHeapStructSize
-                0x0000000000000000        0x4 /tmp/ccBnnVzn.o
+                0x0000000000000000        0x4 /tmp/ccKTx1rI.o
  .text.xPortGetFreeHeapSize
-                0x0000000000000000       0x18 /tmp/ccBnnVzn.o
+                0x0000000000000000       0x18 /tmp/ccKTx1rI.o
  .text.xPortGetMinimumEverFreeHeapSize
-                0x0000000000000000       0x18 /tmp/ccBnnVzn.o
+                0x0000000000000000       0x18 /tmp/ccKTx1rI.o
  .text.vPortInitialiseBlocks
-                0x0000000000000000        0xe /tmp/ccBnnVzn.o
+                0x0000000000000000        0xe /tmp/ccKTx1rI.o
  .text.pvPortCalloc
-                0x0000000000000000       0x60 /tmp/ccBnnVzn.o
+                0x0000000000000000       0x60 /tmp/ccKTx1rI.o
  .text.vPortGetHeapStats
-                0x0000000000000000       0xbc /tmp/ccBnnVzn.o
+                0x0000000000000000       0xbc /tmp/ccKTx1rI.o
  .text.vPortHeapResetState
-                0x0000000000000000       0x40 /tmp/ccBnnVzn.o
+                0x0000000000000000       0x40 /tmp/ccKTx1rI.o
  .text          0x0000000000000000        0xc /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-atexit.o)
  .data          0x0000000000000000        0x0 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-atexit.o)
  .bss           0x0000000000000000        0x0 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-atexit.o)
@@ -349,14 +347,14 @@ Linker script and memory map
 LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
 LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/crt0.o
-LOAD /tmp/ccdtfcnl.o
-LOAD /tmp/cc7mscBm.o
-LOAD /tmp/ccUUg9Ka.o
-LOAD /tmp/ccC4QQij.o
-LOAD /tmp/ccKQ68KS.o
-LOAD /tmp/ccfLMsqi.o
-LOAD /tmp/ccP4Uwz7.o
-LOAD /tmp/ccBnnVzn.o
+LOAD /tmp/ccNBUCrz.o
+LOAD /tmp/ccendPHQ.o
+LOAD /tmp/cct7UQjl.o
+LOAD /tmp/cc3W7Xrs.o
+LOAD /tmp/ccArH7EU.o
+LOAD /tmp/ccwJSFQY.o
+LOAD /tmp/ccgGkEZB.o
+LOAD /tmp/ccKTx1rI.o
 START GROUP
 LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/libgcc.a
 LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a
@@ -373,366 +371,366 @@ LOAD /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtn.o
 
 .isr_vector     0x0000000000000000      0x27c
  *(.isr_vector)
- .isr_vector    0x0000000000000000      0x27c /tmp/cc7mscBm.o
+ .isr_vector    0x0000000000000000      0x27c /tmp/ccendPHQ.o
                 0x0000000000000000                g_pfnVectors
 
-.text           0x0000000000000280     0x3514
+.text           0x0000000000000280     0x3504
  *(.text*)
  .text.uart_putc
-                0x0000000000000280       0x34 /tmp/ccdtfcnl.o
+                0x0000000000000280       0x34 /tmp/ccNBUCrz.o
  .text.uart_puts
-                0x00000000000002b4       0x2a /tmp/ccdtfcnl.o
- .text.uart_nl  0x00000000000002de       0x14 /tmp/ccdtfcnl.o
+                0x00000000000002b4       0x2a /tmp/ccNBUCrz.o
+ .text.uart_nl  0x00000000000002de       0x14 /tmp/ccNBUCrz.o
  *fill*         0x00000000000002f2        0x2 
  .text.uart_udec
-                0x00000000000002f4       0x7c /tmp/ccdtfcnl.o
+                0x00000000000002f4       0x7c /tmp/ccNBUCrz.o
  .text.uart_getc_nonblock
-                0x0000000000000370       0x30 /tmp/ccdtfcnl.o
+                0x0000000000000370       0x30 /tmp/ccNBUCrz.o
  .text.GPIO_Init
-                0x00000000000003a0      0x204 /tmp/ccdtfcnl.o
+                0x00000000000003a0      0x204 /tmp/ccNBUCrz.o
                 0x00000000000003a0                GPIO_Init
  .text.ADC_Init
-                0x00000000000005a4       0xac /tmp/ccdtfcnl.o
+                0x00000000000005a4       0xac /tmp/ccNBUCrz.o
                 0x00000000000005a4                ADC_Init
  .text.PWM_Init
-                0x0000000000000650       0xc0 /tmp/ccdtfcnl.o
+                0x0000000000000650       0xc0 /tmp/ccNBUCrz.o
                 0x0000000000000650                PWM_Init
  .text.PWM_SetDuty
-                0x0000000000000710       0x54 /tmp/ccdtfcnl.o
+                0x0000000000000710       0x54 /tmp/ccNBUCrz.o
                 0x0000000000000710                PWM_SetDuty
- .text.led_set  0x0000000000000764       0x5c /tmp/ccdtfcnl.o
+ .text.led_set  0x0000000000000764       0x5c /tmp/ccNBUCrz.o
                 0x0000000000000764                led_set
  .text.GPIOPortD_Handler
-                0x00000000000007c0       0x3c /tmp/ccdtfcnl.o
+                0x00000000000007c0       0x3c /tmp/ccNBUCrz.o
                 0x00000000000007c0                GPIOPortD_Handler
  .text.vEncoderTask
-                0x00000000000007fc      0x15c /tmp/ccdtfcnl.o
+                0x00000000000007fc      0x15c /tmp/ccNBUCrz.o
                 0x00000000000007fc                vEncoderTask
  .text.vCruiseTask
-                0x0000000000000958       0xc8 /tmp/ccdtfcnl.o
+                0x0000000000000958       0xc8 /tmp/ccNBUCrz.o
                 0x0000000000000958                vCruiseTask
  .text.vManualTask
-                0x0000000000000a20      0x198 /tmp/ccdtfcnl.o
+                0x0000000000000a20      0x198 /tmp/ccNBUCrz.o
                 0x0000000000000a20                vManualTask
  .text.vApplicationStackOverflowHook
-                0x0000000000000bb8       0x16 /tmp/ccdtfcnl.o
+                0x0000000000000bb8       0x16 /tmp/ccNBUCrz.o
                 0x0000000000000bb8                vApplicationStackOverflowHook
  *fill*         0x0000000000000bce        0x2 
- .text.main     0x0000000000000bd0      0x174 /tmp/ccdtfcnl.o
+ .text.main     0x0000000000000bd0      0x174 /tmp/ccNBUCrz.o
                 0x0000000000000bd0                main
  .text.NMI_Handler
-                0x0000000000000d44        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d44        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d44                NMI_Handler
  .text.HardFault_Handler
-                0x0000000000000d4a        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d4a        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d4a                HardFault_Handler
  .text.MemManage_Handler
-                0x0000000000000d50        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d50        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d50                MemManage_Handler
  .text.BusFault_Handler
-                0x0000000000000d56        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d56        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d56                BusFault_Handler
  .text.UsageFault_Handler
-                0x0000000000000d5c        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d5c        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d5c                UsageFault_Handler
  .text.DebugMon_Handler
-                0x0000000000000d62        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d62        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d62                DebugMon_Handler
  .text.IntDefaultHandler
-                0x0000000000000d68        0x6 /tmp/cc7mscBm.o
+                0x0000000000000d68        0x6 /tmp/ccendPHQ.o
                 0x0000000000000d68                IntDefaultHandler
  *fill*         0x0000000000000d6e        0x2 
  .text.Reset_Handler
-                0x0000000000000d70       0x5c /tmp/cc7mscBm.o
+                0x0000000000000d70       0x5c /tmp/ccendPHQ.o
                 0x0000000000000d70                Reset_Handler
  .text.prvCreateTask
-                0x0000000000000dcc       0x78 /tmp/ccUUg9Ka.o
+                0x0000000000000dcc       0x78 /tmp/cct7UQjl.o
  .text.xTaskCreate
-                0x0000000000000e44       0x46 /tmp/ccUUg9Ka.o
+                0x0000000000000e44       0x46 /tmp/cct7UQjl.o
                 0x0000000000000e44                xTaskCreate
  .text.prvInitialiseNewTask
-                0x0000000000000e8a      0x11c /tmp/ccUUg9Ka.o
+                0x0000000000000e8a      0x11c /tmp/cct7UQjl.o
  *fill*         0x0000000000000fa6        0x2 
  .text.prvAddNewTaskToReadyList
-                0x0000000000000fa8      0x128 /tmp/ccUUg9Ka.o
+                0x0000000000000fa8      0x128 /tmp/cct7UQjl.o
  .text.xTaskDelayUntil
-                0x00000000000010d0       0xfc /tmp/ccUUg9Ka.o
+                0x00000000000010d0       0xfc /tmp/cct7UQjl.o
                 0x00000000000010d0                xTaskDelayUntil
  .text.prvCreateIdleTasks
-                0x00000000000011cc       0x94 /tmp/ccUUg9Ka.o
+                0x00000000000011cc       0x94 /tmp/cct7UQjl.o
  .text.vTaskStartScheduler
-                0x0000000000001260       0x7c /tmp/ccUUg9Ka.o
+                0x0000000000001260       0x7c /tmp/cct7UQjl.o
                 0x0000000000001260                vTaskStartScheduler
  .text.vTaskSuspendAll
-                0x00000000000012dc       0x1c /tmp/ccUUg9Ka.o
+                0x00000000000012dc       0x1c /tmp/cct7UQjl.o
                 0x00000000000012dc                vTaskSuspendAll
  .text.xTaskResumeAll
-                0x00000000000012f8      0x210 /tmp/ccUUg9Ka.o
+                0x00000000000012f8      0x210 /tmp/cct7UQjl.o
                 0x00000000000012f8                xTaskResumeAll
  .text.xTaskGetTickCount
-                0x0000000000001508       0x20 /tmp/ccUUg9Ka.o
+                0x0000000000001508       0x20 /tmp/cct7UQjl.o
                 0x0000000000001508                xTaskGetTickCount
  .text.xTaskIncrementTick
-                0x0000000000001528      0x230 /tmp/ccUUg9Ka.o
+                0x0000000000001528      0x230 /tmp/cct7UQjl.o
                 0x0000000000001528                xTaskIncrementTick
  .text.vTaskSwitchContext
-                0x0000000000001758      0x104 /tmp/ccUUg9Ka.o
+                0x0000000000001758      0x104 /tmp/cct7UQjl.o
                 0x0000000000001758                vTaskSwitchContext
  .text.vTaskPlaceOnEventList
-                0x000000000000185c       0x48 /tmp/ccUUg9Ka.o
+                0x000000000000185c       0x48 /tmp/cct7UQjl.o
                 0x000000000000185c                vTaskPlaceOnEventList
  .text.xTaskRemoveFromEventList
-                0x00000000000018a4      0x1b0 /tmp/ccUUg9Ka.o
+                0x00000000000018a4      0x1b0 /tmp/cct7UQjl.o
                 0x00000000000018a4                xTaskRemoveFromEventList
  .text.vTaskInternalSetTimeOutState
-                0x0000000000001a54       0x2c /tmp/ccUUg9Ka.o
+                0x0000000000001a54       0x2c /tmp/cct7UQjl.o
                 0x0000000000001a54                vTaskInternalSetTimeOutState
  .text.xTaskCheckForTimeOut
-                0x0000000000001a80       0xcc /tmp/ccUUg9Ka.o
+                0x0000000000001a80       0xcc /tmp/cct7UQjl.o
                 0x0000000000001a80                xTaskCheckForTimeOut
  .text.vTaskMissedYield
-                0x0000000000001b4c       0x18 /tmp/ccUUg9Ka.o
+                0x0000000000001b4c       0x18 /tmp/cct7UQjl.o
                 0x0000000000001b4c                vTaskMissedYield
  .text.prvIdleTask
-                0x0000000000001b64       0x30 /tmp/ccUUg9Ka.o
+                0x0000000000001b64       0x30 /tmp/cct7UQjl.o
  .text.prvInitialiseTaskLists
-                0x0000000000001b94       0x74 /tmp/ccUUg9Ka.o
+                0x0000000000001b94       0x74 /tmp/cct7UQjl.o
  .text.prvCheckTasksWaitingTermination
-                0x0000000000001c08        0xe /tmp/ccUUg9Ka.o
+                0x0000000000001c08        0xe /tmp/cct7UQjl.o
  *fill*         0x0000000000001c16        0x2 
  .text.prvResetNextTaskUnblockTime
-                0x0000000000001c18       0x38 /tmp/ccUUg9Ka.o
+                0x0000000000001c18       0x38 /tmp/cct7UQjl.o
  .text.xTaskPriorityInherit
-                0x0000000000001c50      0x140 /tmp/ccUUg9Ka.o
+                0x0000000000001c50      0x140 /tmp/cct7UQjl.o
                 0x0000000000001c50                xTaskPriorityInherit
  .text.xTaskPriorityDisinherit
-                0x0000000000001d90      0x14c /tmp/ccUUg9Ka.o
+                0x0000000000001d90      0x14c /tmp/cct7UQjl.o
                 0x0000000000001d90                xTaskPriorityDisinherit
  .text.vTaskPriorityDisinheritAfterTimeout
-                0x0000000000001edc      0x174 /tmp/ccUUg9Ka.o
+                0x0000000000001edc      0x174 /tmp/cct7UQjl.o
                 0x0000000000001edc                vTaskPriorityDisinheritAfterTimeout
  .text.pvTaskIncrementMutexHeldCount
-                0x0000000000002050       0x30 /tmp/ccUUg9Ka.o
+                0x0000000000002050       0x30 /tmp/cct7UQjl.o
                 0x0000000000002050                pvTaskIncrementMutexHeldCount
  .text.prvAddCurrentTaskToDelayedList
-                0x0000000000002080      0x104 /tmp/ccUUg9Ka.o
+                0x0000000000002080      0x104 /tmp/cct7UQjl.o
  .text.xQueueGenericReset
-                0x0000000000002184      0x120 /tmp/ccC4QQij.o
+                0x0000000000002184      0x120 /tmp/cc3W7Xrs.o
                 0x0000000000002184                xQueueGenericReset
  .text.xQueueGenericCreate
-                0x00000000000022a4       0x9c /tmp/ccC4QQij.o
+                0x00000000000022a4       0x9c /tmp/cc3W7Xrs.o
                 0x00000000000022a4                xQueueGenericCreate
  .text.prvInitialiseNewQueue
-                0x0000000000002340       0x3e /tmp/ccC4QQij.o
+                0x0000000000002340       0x3e /tmp/cc3W7Xrs.o
  .text.prvInitialiseMutex
-                0x000000000000237e       0x34 /tmp/ccC4QQij.o
+                0x000000000000237e       0x34 /tmp/cc3W7Xrs.o
  .text.xQueueCreateMutex
-                0x00000000000023b2       0x30 /tmp/ccC4QQij.o
+                0x00000000000023b2       0x30 /tmp/cc3W7Xrs.o
                 0x00000000000023b2                xQueueCreateMutex
  *fill*         0x00000000000023e2        0x2 
  .text.xQueueGenericSend
-                0x00000000000023e4      0x1cc /tmp/ccC4QQij.o
+                0x00000000000023e4      0x1cc /tmp/cc3W7Xrs.o
                 0x00000000000023e4                xQueueGenericSend
  .text.xQueueSemaphoreTake
-                0x00000000000025b0      0x1cc /tmp/ccC4QQij.o
+                0x00000000000025b0      0x1cc /tmp/cc3W7Xrs.o
                 0x00000000000025b0                xQueueSemaphoreTake
  .text.prvGetDisinheritPriorityAfterTimeout
-                0x000000000000277c       0x30 /tmp/ccC4QQij.o
+                0x000000000000277c       0x30 /tmp/cc3W7Xrs.o
  .text.prvCopyDataToQueue
-                0x00000000000027ac       0xd4 /tmp/ccC4QQij.o
+                0x00000000000027ac       0xd4 /tmp/cc3W7Xrs.o
  .text.prvUnlockQueue
-                0x0000000000002880       0xa4 /tmp/ccC4QQij.o
+                0x0000000000002880       0xa4 /tmp/cc3W7Xrs.o
  .text.prvIsQueueEmpty
-                0x0000000000002924       0x2c /tmp/ccC4QQij.o
+                0x0000000000002924       0x2c /tmp/cc3W7Xrs.o
  .text.prvIsQueueFull
-                0x0000000000002950       0x30 /tmp/ccC4QQij.o
+                0x0000000000002950       0x30 /tmp/cc3W7Xrs.o
  .text.vListInitialise
-                0x0000000000002980       0x40 /tmp/ccKQ68KS.o
+                0x0000000000002980       0x40 /tmp/ccArH7EU.o
                 0x0000000000002980                vListInitialise
  .text.vListInitialiseItem
-                0x00000000000029c0       0x1a /tmp/ccKQ68KS.o
+                0x00000000000029c0       0x1a /tmp/ccArH7EU.o
                 0x00000000000029c0                vListInitialiseItem
  .text.vListInsert
-                0x00000000000029da       0x72 /tmp/ccKQ68KS.o
+                0x00000000000029da       0x72 /tmp/ccArH7EU.o
                 0x00000000000029da                vListInsert
  .text.uxListRemove
-                0x0000000000002a4c       0x54 /tmp/ccKQ68KS.o
+                0x0000000000002a4c       0x54 /tmp/ccArH7EU.o
                 0x0000000000002a4c                uxListRemove
  .text.pxPortInitialiseStack
-                0x0000000000002aa0       0x68 /tmp/ccP4Uwz7.o
+                0x0000000000002aa0       0x68 /tmp/ccgGkEZB.o
                 0x0000000000002aa0                pxPortInitialiseStack
  .text.prvTaskExitError
-                0x0000000000002b08       0x58 /tmp/ccP4Uwz7.o
+                0x0000000000002b08       0x58 /tmp/ccgGkEZB.o
  .text.vPortSVCHandler
-                0x0000000000002b60       0x28 /tmp/ccP4Uwz7.o
+                0x0000000000002b60       0x28 /tmp/ccgGkEZB.o
                 0x0000000000002b60                vPortSVCHandler
  .text.prvPortStartFirstTask
-                0x0000000000002b88       0x2c /tmp/ccP4Uwz7.o
+                0x0000000000002b88       0x2c /tmp/ccgGkEZB.o
  .text.xPortStartScheduler
-                0x0000000000002bb4      0x1d4 /tmp/ccP4Uwz7.o
+                0x0000000000002bb4      0x1d4 /tmp/ccgGkEZB.o
                 0x0000000000002bb4                xPortStartScheduler
  .text.vPortEnterCritical
-                0x0000000000002d88       0x60 /tmp/ccP4Uwz7.o
+                0x0000000000002d88       0x60 /tmp/ccgGkEZB.o
                 0x0000000000002d88                vPortEnterCritical
  .text.vPortExitCritical
-                0x0000000000002de8       0x54 /tmp/ccP4Uwz7.o
+                0x0000000000002de8       0x54 /tmp/ccgGkEZB.o
                 0x0000000000002de8                vPortExitCritical
  *fill*         0x0000000000002e3c        0x4 
  .text.xPortPendSVHandler
-                0x0000000000002e40       0x68 /tmp/ccP4Uwz7.o
+                0x0000000000002e40       0x68 /tmp/ccgGkEZB.o
                 0x0000000000002e40                xPortPendSVHandler
  .text.xPortSysTickHandler
-                0x0000000000002ea8       0x44 /tmp/ccP4Uwz7.o
+                0x0000000000002ea8       0x44 /tmp/ccgGkEZB.o
                 0x0000000000002ea8                xPortSysTickHandler
  .text.vPortSetupTimerInterrupt
-                0x0000000000002eec       0x34 /tmp/ccP4Uwz7.o
+                0x0000000000002eec       0x34 /tmp/ccgGkEZB.o
                 0x0000000000002eec                vPortSetupTimerInterrupt
  .text.vPortEnableVFP
-                0x0000000000002f20       0x18 /tmp/ccP4Uwz7.o
+                0x0000000000002f20       0x18 /tmp/ccgGkEZB.o
  .text.pvPortMalloc
-                0x0000000000002f38      0x258 /tmp/ccBnnVzn.o
+                0x0000000000002f38      0x258 /tmp/ccKTx1rI.o
                 0x0000000000002f38                pvPortMalloc
  .text.vPortFree
-                0x0000000000003190       0xf0 /tmp/ccBnnVzn.o
+                0x0000000000003190       0xf0 /tmp/ccKTx1rI.o
                 0x0000000000003190                vPortFree
  .text.prvHeapInit
-                0x0000000000003280       0xb4 /tmp/ccBnnVzn.o
+                0x0000000000003280       0xb4 /tmp/ccKTx1rI.o
  .text.prvInsertBlockIntoFreeList
-                0x0000000000003334       0xf4 /tmp/ccBnnVzn.o
+                0x0000000000003334       0xf4 /tmp/ccKTx1rI.o
  .text          0x0000000000003428      0x134 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
                 0x0000000000003428                memcpy
  .text          0x000000000000355c       0xa4 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
                 0x000000000000355c                memset
  *(.rodata*)
- .rodata        0x0000000000003600      0x182 /tmp/ccdtfcnl.o
- *fill*         0x0000000000003782        0x2 
- .rodata        0x0000000000003784        0x5 /tmp/ccUUg9Ka.o
+ .rodata        0x0000000000003600      0x172 /tmp/ccNBUCrz.o
+ *fill*         0x0000000000003772        0x2 
+ .rodata        0x0000000000003774        0x5 /tmp/cct7UQjl.o
  *(.init)
- *fill*         0x0000000000003789        0x3 
- .init          0x000000000000378c        0x4 /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
-                0x000000000000378c                _init
+ *fill*         0x0000000000003779        0x3 
+ .init          0x000000000000377c        0x4 /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
+                0x000000000000377c                _init
  *(.fini)
- .fini          0x0000000000003790        0x4 /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
-                0x0000000000003790                _fini
-                0x0000000000003794                . = ALIGN (0x4)
-                0x0000000000003794                _etext = .
-                0x0000000000003794                _la_data = LOADADDR (.data)
+ .fini          0x0000000000003780        0x4 /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
+                0x0000000000003780                _fini
+                0x0000000000003784                . = ALIGN (0x4)
+                0x0000000000003784                _etext = .
+                0x0000000000003784                _la_data = LOADADDR (.data)
 
-.glue_7         0x0000000000003794        0x0
- .glue_7        0x0000000000003794        0x0 linker stubs
+.glue_7         0x0000000000003784        0x0
+ .glue_7        0x0000000000003784        0x0 linker stubs
 
-.glue_7t        0x0000000000003794        0x0
- .glue_7t       0x0000000000003794        0x0 linker stubs
+.glue_7t        0x0000000000003784        0x0
+ .glue_7t       0x0000000000003784        0x0 linker stubs
 
-.vfp11_veneer   0x0000000000003794        0x0
- .vfp11_veneer  0x0000000000003794        0x0 linker stubs
+.vfp11_veneer   0x0000000000003784        0x0
+ .vfp11_veneer  0x0000000000003784        0x0 linker stubs
 
-.v4_bx          0x0000000000003794        0x0
- .v4_bx         0x0000000000003794        0x0 linker stubs
+.v4_bx          0x0000000000003784        0x0
+ .v4_bx         0x0000000000003784        0x0 linker stubs
 
-.iplt           0x0000000000003794        0x0
- .iplt          0x0000000000003794        0x0 /tmp/ccdtfcnl.o
+.iplt           0x0000000000003784        0x0
+ .iplt          0x0000000000003784        0x0 /tmp/ccNBUCrz.o
 
-.rel.dyn        0x0000000000003794        0x0
- .rel.iplt      0x0000000000003794        0x0 /tmp/ccdtfcnl.o
+.rel.dyn        0x0000000000003784        0x0
+ .rel.iplt      0x0000000000003784        0x0 /tmp/ccNBUCrz.o
 
-.data           0x0000000020000000        0xc load address 0x0000000000003794
+.data           0x0000000020000000        0xc load address 0x0000000000003784
                 0x0000000020000000                . = ALIGN (0x4)
                 0x0000000020000000                _sdata = .
  *(.data*)
  .data.target_rpm
-                0x0000000020000000        0x4 /tmp/ccdtfcnl.o
+                0x0000000020000000        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000000                target_rpm
  .data.uxTopUsedPriority
-                0x0000000020000004        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000004        0x4 /tmp/cct7UQjl.o
  .data.uxCriticalNesting
-                0x0000000020000008        0x4 /tmp/ccP4Uwz7.o
+                0x0000000020000008        0x4 /tmp/ccgGkEZB.o
                 0x000000002000000c                . = ALIGN (0x4)
                 0x000000002000000c                _edata = .
 
-.igot.plt       0x000000002000000c        0x0 load address 0x00000000000037a0
- .igot.plt      0x000000002000000c        0x0 /tmp/ccdtfcnl.o
+.igot.plt       0x000000002000000c        0x0 load address 0x0000000000003790
+ .igot.plt      0x000000002000000c        0x0 /tmp/ccNBUCrz.o
 
-.bss            0x000000002000000c     0x292c load address 0x00000000000037a0
+.bss            0x000000002000000c     0x292c load address 0x0000000000003790
                 0x000000002000000c                . = ALIGN (0x4)
                 0x000000002000000c                _sbss = .
  *(.bss*)
  .bss.cruise_state
-                0x000000002000000c        0x1 /tmp/ccdtfcnl.o
+                0x000000002000000c        0x1 /tmp/ccNBUCrz.o
                 0x000000002000000c                cruise_state
  *fill*         0x000000002000000d        0x3 
  .bss.current_rpm
-                0x0000000020000010        0x4 /tmp/ccdtfcnl.o
+                0x0000000020000010        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000010                current_rpm
- .bss.sim_rpm   0x0000000020000014        0x4 /tmp/ccdtfcnl.o
+ .bss.sim_rpm   0x0000000020000014        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000014                sim_rpm
  .bss.sim_throttle
-                0x0000000020000018        0x4 /tmp/ccdtfcnl.o
+                0x0000000020000018        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000018                sim_throttle
  .bss.encoder_count
-                0x000000002000001c        0x4 /tmp/ccdtfcnl.o
+                0x000000002000001c        0x4 /tmp/ccNBUCrz.o
                 0x000000002000001c                encoder_count
  .bss.xRPMMutex
-                0x0000000020000020        0x4 /tmp/ccdtfcnl.o
+                0x0000000020000020        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000020                xRPMMutex
  .bss.xStateMutex
-                0x0000000020000024        0x4 /tmp/ccdtfcnl.o
+                0x0000000020000024        0x4 /tmp/ccNBUCrz.o
                 0x0000000020000024                xStateMutex
  .bss.pxCurrentTCB
-                0x0000000020000028        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000028        0x4 /tmp/cct7UQjl.o
                 0x0000000020000028                pxCurrentTCB
  .bss.pxReadyTasksLists
-                0x000000002000002c       0x64 /tmp/ccUUg9Ka.o
+                0x000000002000002c       0x64 /tmp/cct7UQjl.o
  .bss.xDelayedTaskList1
-                0x0000000020000090       0x14 /tmp/ccUUg9Ka.o
+                0x0000000020000090       0x14 /tmp/cct7UQjl.o
  .bss.xDelayedTaskList2
-                0x00000000200000a4       0x14 /tmp/ccUUg9Ka.o
+                0x00000000200000a4       0x14 /tmp/cct7UQjl.o
  .bss.pxDelayedTaskList
-                0x00000000200000b8        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000b8        0x4 /tmp/cct7UQjl.o
  .bss.pxOverflowDelayedTaskList
-                0x00000000200000bc        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000bc        0x4 /tmp/cct7UQjl.o
  .bss.xPendingReadyList
-                0x00000000200000c0       0x14 /tmp/ccUUg9Ka.o
+                0x00000000200000c0       0x14 /tmp/cct7UQjl.o
  .bss.xSuspendedTaskList
-                0x00000000200000d4       0x14 /tmp/ccUUg9Ka.o
+                0x00000000200000d4       0x14 /tmp/cct7UQjl.o
  .bss.uxCurrentNumberOfTasks
-                0x00000000200000e8        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000e8        0x4 /tmp/cct7UQjl.o
  .bss.xTickCount
-                0x00000000200000ec        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000ec        0x4 /tmp/cct7UQjl.o
  .bss.uxTopReadyPriority
-                0x00000000200000f0        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000f0        0x4 /tmp/cct7UQjl.o
  .bss.xSchedulerRunning
-                0x00000000200000f4        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000f4        0x4 /tmp/cct7UQjl.o
  .bss.xPendedTicks
-                0x00000000200000f8        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000f8        0x4 /tmp/cct7UQjl.o
  .bss.xYieldPendings
-                0x00000000200000fc        0x4 /tmp/ccUUg9Ka.o
+                0x00000000200000fc        0x4 /tmp/cct7UQjl.o
  .bss.xNumOfOverflows
-                0x0000000020000100        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000100        0x4 /tmp/cct7UQjl.o
  .bss.uxTaskNumber
-                0x0000000020000104        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000104        0x4 /tmp/cct7UQjl.o
  .bss.xNextTaskUnblockTime
-                0x0000000020000108        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000108        0x4 /tmp/cct7UQjl.o
  .bss.xIdleTaskHandles
-                0x000000002000010c        0x4 /tmp/ccUUg9Ka.o
+                0x000000002000010c        0x4 /tmp/cct7UQjl.o
  .bss.uxSchedulerSuspended
-                0x0000000020000110        0x4 /tmp/ccUUg9Ka.o
+                0x0000000020000110        0x4 /tmp/cct7UQjl.o
  .bss.ucMaxSysCallPriority
-                0x0000000020000114        0x1 /tmp/ccP4Uwz7.o
+                0x0000000020000114        0x1 /tmp/ccgGkEZB.o
  *fill*         0x0000000020000115        0x3 
  .bss.ulMaxPRIGROUPValue
-                0x0000000020000118        0x4 /tmp/ccP4Uwz7.o
- .bss.ucHeap    0x000000002000011c     0x2800 /tmp/ccBnnVzn.o
- .bss.xStart    0x000000002000291c        0x8 /tmp/ccBnnVzn.o
- .bss.pxEnd     0x0000000020002924        0x4 /tmp/ccBnnVzn.o
+                0x0000000020000118        0x4 /tmp/ccgGkEZB.o
+ .bss.ucHeap    0x000000002000011c     0x2800 /tmp/ccKTx1rI.o
+ .bss.xStart    0x000000002000291c        0x8 /tmp/ccKTx1rI.o
+ .bss.pxEnd     0x0000000020002924        0x4 /tmp/ccKTx1rI.o
  .bss.xFreeBytesRemaining
-                0x0000000020002928        0x4 /tmp/ccBnnVzn.o
+                0x0000000020002928        0x4 /tmp/ccKTx1rI.o
  .bss.xMinimumEverFreeBytesRemaining
-                0x000000002000292c        0x4 /tmp/ccBnnVzn.o
+                0x000000002000292c        0x4 /tmp/ccKTx1rI.o
  .bss.xNumberOfSuccessfulAllocations
-                0x0000000020002930        0x4 /tmp/ccBnnVzn.o
+                0x0000000020002930        0x4 /tmp/ccKTx1rI.o
  .bss.xNumberOfSuccessfulFrees
-                0x0000000020002934        0x4 /tmp/ccBnnVzn.o
+                0x0000000020002934        0x4 /tmp/ccKTx1rI.o
  *(COMMON)
                 0x0000000020002938                . = ALIGN (0x4)
                 0x0000000020002938                _ebss = .
@@ -744,125 +742,125 @@ LOAD linker stubs
  .ARM.attributes
                 0x0000000000000000       0x1e /usr/lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crti.o
  .ARM.attributes
-                0x000000000000001e       0x34 /tmp/ccdtfcnl.o
+                0x000000000000001e       0x34 /tmp/ccNBUCrz.o
  .ARM.attributes
-                0x0000000000000052       0x34 /tmp/cc7mscBm.o
+                0x0000000000000052       0x34 /tmp/ccendPHQ.o
  .ARM.attributes
-                0x0000000000000086       0x34 /tmp/ccUUg9Ka.o
+                0x0000000000000086       0x34 /tmp/cct7UQjl.o
  .ARM.attributes
-                0x00000000000000ba       0x34 /tmp/ccC4QQij.o
+                0x00000000000000ba       0x34 /tmp/cc3W7Xrs.o
  .ARM.attributes
-                0x00000000000000ee       0x34 /tmp/ccKQ68KS.o
+                0x00000000000000ee       0x34 /tmp/ccArH7EU.o
  .ARM.attributes
-                0x0000000000000122       0x34 /tmp/ccP4Uwz7.o
+                0x0000000000000122       0x34 /tmp/ccgGkEZB.o
  .ARM.attributes
-                0x0000000000000156       0x34 /tmp/ccBnnVzn.o
+                0x0000000000000156       0x34 /tmp/ccKTx1rI.o
  .ARM.attributes
                 0x000000000000018a       0x1c /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
  .ARM.attributes
                 0x00000000000001a6       0x34 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
 .comment        0x0000000000000000       0x33
- .comment       0x0000000000000000       0x33 /tmp/ccdtfcnl.o
+ .comment       0x0000000000000000       0x33 /tmp/ccNBUCrz.o
                                          0x34 (size before relaxing)
- .comment       0x0000000000000033       0x34 /tmp/cc7mscBm.o
- .comment       0x0000000000000033       0x34 /tmp/ccUUg9Ka.o
- .comment       0x0000000000000033       0x34 /tmp/ccC4QQij.o
- .comment       0x0000000000000033       0x34 /tmp/ccKQ68KS.o
- .comment       0x0000000000000033       0x34 /tmp/ccP4Uwz7.o
- .comment       0x0000000000000033       0x34 /tmp/ccBnnVzn.o
+ .comment       0x0000000000000033       0x34 /tmp/ccendPHQ.o
+ .comment       0x0000000000000033       0x34 /tmp/cct7UQjl.o
+ .comment       0x0000000000000033       0x34 /tmp/cc3W7Xrs.o
+ .comment       0x0000000000000033       0x34 /tmp/ccArH7EU.o
+ .comment       0x0000000000000033       0x34 /tmp/ccgGkEZB.o
+ .comment       0x0000000000000033       0x34 /tmp/ccKTx1rI.o
  .comment       0x0000000000000033       0x34 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
-.debug_info     0x0000000000000000     0x4cb2
- .debug_info    0x0000000000000000      0x7d2 /tmp/ccdtfcnl.o
- .debug_info    0x00000000000007d2      0x1a0 /tmp/cc7mscBm.o
- .debug_info    0x0000000000000972     0x20a5 /tmp/ccUUg9Ka.o
- .debug_info    0x0000000000002a17     0x137c /tmp/ccC4QQij.o
- .debug_info    0x0000000000003d93      0x2b5 /tmp/ccKQ68KS.o
- .debug_info    0x0000000000004048      0x56a /tmp/ccP4Uwz7.o
- .debug_info    0x00000000000045b2      0x5a3 /tmp/ccBnnVzn.o
- .debug_info    0x0000000000004b55       0x26 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
- .debug_info    0x0000000000004b7b      0x137 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
+.debug_info     0x0000000000000000     0x4c10
+ .debug_info    0x0000000000000000      0x730 /tmp/ccNBUCrz.o
+ .debug_info    0x0000000000000730      0x1a0 /tmp/ccendPHQ.o
+ .debug_info    0x00000000000008d0     0x20a5 /tmp/cct7UQjl.o
+ .debug_info    0x0000000000002975     0x137c /tmp/cc3W7Xrs.o
+ .debug_info    0x0000000000003cf1      0x2b5 /tmp/ccArH7EU.o
+ .debug_info    0x0000000000003fa6      0x56a /tmp/ccgGkEZB.o
+ .debug_info    0x0000000000004510      0x5a3 /tmp/ccKTx1rI.o
+ .debug_info    0x0000000000004ab3       0x26 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
+ .debug_info    0x0000000000004ad9      0x137 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
 .debug_abbrev   0x0000000000000000      0xe22
- .debug_abbrev  0x0000000000000000      0x2a9 /tmp/ccdtfcnl.o
- .debug_abbrev  0x00000000000002a9       0xc0 /tmp/cc7mscBm.o
- .debug_abbrev  0x0000000000000369      0x2ec /tmp/ccUUg9Ka.o
- .debug_abbrev  0x0000000000000655      0x223 /tmp/ccC4QQij.o
- .debug_abbrev  0x0000000000000878       0xe8 /tmp/ccKQ68KS.o
- .debug_abbrev  0x0000000000000960      0x208 /tmp/ccP4Uwz7.o
- .debug_abbrev  0x0000000000000b68      0x1f2 /tmp/ccBnnVzn.o
+ .debug_abbrev  0x0000000000000000      0x2a9 /tmp/ccNBUCrz.o
+ .debug_abbrev  0x00000000000002a9       0xc0 /tmp/ccendPHQ.o
+ .debug_abbrev  0x0000000000000369      0x2ec /tmp/cct7UQjl.o
+ .debug_abbrev  0x0000000000000655      0x223 /tmp/cc3W7Xrs.o
+ .debug_abbrev  0x0000000000000878       0xe8 /tmp/ccArH7EU.o
+ .debug_abbrev  0x0000000000000960      0x208 /tmp/ccgGkEZB.o
+ .debug_abbrev  0x0000000000000b68      0x1f2 /tmp/ccKTx1rI.o
  .debug_abbrev  0x0000000000000d5a       0x14 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
  .debug_abbrev  0x0000000000000d6e       0xb4 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
-.debug_aranges  0x0000000000000000      0x530
+.debug_aranges  0x0000000000000000      0x528
  .debug_aranges
-                0x0000000000000000       0xc8 /tmp/ccdtfcnl.o
+                0x0000000000000000       0xc0 /tmp/ccNBUCrz.o
  .debug_aranges
-                0x00000000000000c8       0x58 /tmp/cc7mscBm.o
+                0x00000000000000c0       0x58 /tmp/ccendPHQ.o
  .debug_aranges
-                0x0000000000000120      0x1b8 /tmp/ccUUg9Ka.o
+                0x0000000000000118      0x1b8 /tmp/cct7UQjl.o
  .debug_aranges
-                0x00000000000002d8       0xf0 /tmp/ccC4QQij.o
+                0x00000000000002d0       0xf0 /tmp/cc3W7Xrs.o
  .debug_aranges
-                0x00000000000003c8       0x40 /tmp/ccKQ68KS.o
+                0x00000000000003c0       0x40 /tmp/ccArH7EU.o
  .debug_aranges
-                0x0000000000000408       0x80 /tmp/ccP4Uwz7.o
+                0x0000000000000400       0x80 /tmp/ccgGkEZB.o
  .debug_aranges
-                0x0000000000000488       0x68 /tmp/ccBnnVzn.o
+                0x0000000000000480       0x68 /tmp/ccKTx1rI.o
  .debug_aranges
-                0x00000000000004f0       0x20 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
+                0x00000000000004e8       0x20 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
  .debug_aranges
-                0x0000000000000510       0x20 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
+                0x0000000000000508       0x20 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
-.debug_ranges   0x0000000000000000      0x4a0
- .debug_ranges  0x0000000000000000       0xb8 /tmp/ccdtfcnl.o
- .debug_ranges  0x00000000000000b8       0x48 /tmp/cc7mscBm.o
- .debug_ranges  0x0000000000000100      0x1c8 /tmp/ccUUg9Ka.o
- .debug_ranges  0x00000000000002c8       0xe0 /tmp/ccC4QQij.o
- .debug_ranges  0x00000000000003a8       0x30 /tmp/ccKQ68KS.o
- .debug_ranges  0x00000000000003d8       0x70 /tmp/ccP4Uwz7.o
- .debug_ranges  0x0000000000000448       0x58 /tmp/ccBnnVzn.o
+.debug_ranges   0x0000000000000000      0x498
+ .debug_ranges  0x0000000000000000       0xb0 /tmp/ccNBUCrz.o
+ .debug_ranges  0x00000000000000b0       0x48 /tmp/ccendPHQ.o
+ .debug_ranges  0x00000000000000f8      0x1c8 /tmp/cct7UQjl.o
+ .debug_ranges  0x00000000000002c0       0xe0 /tmp/cc3W7Xrs.o
+ .debug_ranges  0x00000000000003a0       0x30 /tmp/ccArH7EU.o
+ .debug_ranges  0x00000000000003d0       0x70 /tmp/ccgGkEZB.o
+ .debug_ranges  0x0000000000000440       0x58 /tmp/ccKTx1rI.o
 
-.debug_line     0x0000000000000000     0x3a10
- .debug_line    0x0000000000000000      0x7d4 /tmp/ccdtfcnl.o
- .debug_line    0x00000000000007d4      0x115 /tmp/cc7mscBm.o
- .debug_line    0x00000000000008e9     0x150f /tmp/ccUUg9Ka.o
- .debug_line    0x0000000000001df8      0xdbc /tmp/ccC4QQij.o
- .debug_line    0x0000000000002bb4      0x202 /tmp/ccKQ68KS.o
- .debug_line    0x0000000000002db6      0x456 /tmp/ccP4Uwz7.o
- .debug_line    0x000000000000320c      0x587 /tmp/ccBnnVzn.o
- .debug_line    0x0000000000003793       0xbe /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
- .debug_line    0x0000000000003851      0x1bf /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
+.debug_line     0x0000000000000000     0x39b9
+ .debug_line    0x0000000000000000      0x77d /tmp/ccNBUCrz.o
+ .debug_line    0x000000000000077d      0x115 /tmp/ccendPHQ.o
+ .debug_line    0x0000000000000892     0x150f /tmp/cct7UQjl.o
+ .debug_line    0x0000000000001da1      0xdbc /tmp/cc3W7Xrs.o
+ .debug_line    0x0000000000002b5d      0x202 /tmp/ccArH7EU.o
+ .debug_line    0x0000000000002d5f      0x456 /tmp/ccgGkEZB.o
+ .debug_line    0x00000000000031b5      0x587 /tmp/ccKTx1rI.o
+ .debug_line    0x000000000000373c       0xbe /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
+ .debug_line    0x00000000000037fa      0x1bf /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
-.debug_str      0x0000000000000000     0x1da7
- .debug_str     0x0000000000000000      0x40d /tmp/ccdtfcnl.o
-                                        0x46d (size before relaxing)
- .debug_str     0x000000000000040d       0xd2 /tmp/cc7mscBm.o
+.debug_str      0x0000000000000000     0x1d96
+ .debug_str     0x0000000000000000      0x3fc /tmp/ccNBUCrz.o
+                                        0x45c (size before relaxing)
+ .debug_str     0x00000000000003fc       0xd2 /tmp/ccendPHQ.o
                                         0x25c (size before relaxing)
- .debug_str     0x00000000000004df      0xc8f /tmp/ccUUg9Ka.o
+ .debug_str     0x00000000000004ce      0xc8f /tmp/cct7UQjl.o
                                         0xedd (size before relaxing)
- .debug_str     0x000000000000116e      0x47d /tmp/ccC4QQij.o
+ .debug_str     0x000000000000115d      0x47d /tmp/cc3W7Xrs.o
                                         0x83b (size before relaxing)
- .debug_str     0x00000000000015eb       0xac /tmp/ccKQ68KS.o
+ .debug_str     0x00000000000015da       0xac /tmp/ccArH7EU.o
                                         0x2f6 (size before relaxing)
- .debug_str     0x0000000000001697      0x237 /tmp/ccP4Uwz7.o
+ .debug_str     0x0000000000001686      0x237 /tmp/ccgGkEZB.o
                                         0x46c (size before relaxing)
- .debug_str     0x00000000000018ce      0x2fd /tmp/ccBnnVzn.o
+ .debug_str     0x00000000000018bd      0x2fd /tmp/ccKTx1rI.o
                                         0x4ea (size before relaxing)
- .debug_str     0x0000000000001bcb       0xb1 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
- .debug_str     0x0000000000001c7c      0x12b /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
+ .debug_str     0x0000000000001bba       0xb1 /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memcpy.o)
+ .debug_str     0x0000000000001c6b      0x12b /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
                                         0x1bb (size before relaxing)
 
-.debug_frame    0x0000000000000000     0x138c
- .debug_frame   0x0000000000000000      0x31c /tmp/ccdtfcnl.o
- .debug_frame   0x000000000000031c       0xd8 /tmp/cc7mscBm.o
- .debug_frame   0x00000000000003f4      0x780 /tmp/ccUUg9Ka.o
- .debug_frame   0x0000000000000b74      0x3f8 /tmp/ccC4QQij.o
- .debug_frame   0x0000000000000f6c       0xd8 /tmp/ccKQ68KS.o
- .debug_frame   0x0000000000001044      0x1a8 /tmp/ccP4Uwz7.o
- .debug_frame   0x00000000000011ec      0x174 /tmp/ccBnnVzn.o
- .debug_frame   0x0000000000001360       0x2c /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
+.debug_frame    0x0000000000000000     0x136c
+ .debug_frame   0x0000000000000000      0x2fc /tmp/ccNBUCrz.o
+ .debug_frame   0x00000000000002fc       0xd8 /tmp/ccendPHQ.o
+ .debug_frame   0x00000000000003d4      0x780 /tmp/cct7UQjl.o
+ .debug_frame   0x0000000000000b54      0x3f8 /tmp/cc3W7Xrs.o
+ .debug_frame   0x0000000000000f4c       0xd8 /tmp/ccArH7EU.o
+ .debug_frame   0x0000000000001024      0x1a8 /tmp/ccgGkEZB.o
+ .debug_frame   0x00000000000011cc      0x174 /tmp/ccKTx1rI.o
+ .debug_frame   0x0000000000001340       0x2c /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
 
 .debug_loc      0x0000000000000000      0x22c
  .debug_loc     0x0000000000000000      0x22c /usr/lib/gcc/arm-none-eabi/10.3.1/../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg.a(lib_a-memset.o)
