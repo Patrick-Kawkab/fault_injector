@@ -18,6 +18,11 @@
 #include <string>
 #include <unordered_map>
 
+#define CONFIG_JSON_PATH   "./Qemu_Test/Input.json"  
+#define RESULT_JSON_PATH   "./Qemu_Test/campaign_result.json"
+#define ELF_FILE           "./Cruise_Control/Qemu/Corrected/main.elf"
+#define ELF_PATH           "./Cruise_Control/Qemu/Corrected/"
+
 using json = nlohmann::json;
 
 // ── Lookup tables — string ↔ enum ────────────────────────────────────────────
@@ -50,19 +55,47 @@ static const std::unordered_map<TriggerType, std::string> kTriggerNames = {
     { TRIGGER_MEM_ACCESS, "mem_access" },
 };
 
+// ─────────────────────────────────
+
+uint32_t getSystemStateAddress(const std::string& elfPath ,const std::string& address)
+{
+    printf("[INFO] Getting system state address for %s in %s\n", address.c_str(), elfPath.c_str());
+    if(address.empty()) {
+        return 0; // Return 0 if the address string is empty
+    }
+        std::stringstream cmd;
+    cmd << "arm-none-eabi-nm " << elfPath
+        << " | awk '$3==\"" << address << "\" {print $1}'";
+
+    FILE* pipe = popen(cmd.str().c_str(), "r");
+    if (!pipe) {
+        throw std::runtime_error("Failed to run nm");
+    }
+
+    char buffer[64] = {0};
+    if (!fgets(buffer, sizeof(buffer), pipe)) {
+        pclose(pipe);
+        throw std::runtime_error("system_state not found");
+    }
+    pclose(pipe);
+
+    // Convert hex string → integer
+    return static_cast<uint32_t>(std::stoul(buffer, nullptr, 16));
+}
+
 // ── JSON → FaultDescriptor ────────────────────────────────────────────────────
 
-static FaultDescriptor parseFaultDescriptor(const json& j) {
+static FaultDescriptor parseFaultDescriptor(const json& j ,const std::string& elfPath) {
     FaultDescriptor d{};
 
     d.fault_type     = kFaultTypeMap.at(j.at("fault_type").get<std::string>());
     d.trigger        = kTriggerMap  .at(j.at("trigger")   .get<std::string>());
-    d.target_addr    = j.value("target_addr",    0u);
-    d.inject_addr    = j.value("inject_addr",    0u);
     d.injected_value = j.value("injected_value", 0u);
     d.bit_pos        = j.value("bit_pos",        0u);
-    d.new_pc         = j.value("new_pc",         0u);
-    d.sensor_addr    = j.value("sensor_addr",    0u);
+    d.target_addr    = getSystemStateAddress(elfPath, j.at("target_addr").get<std::string>());//
+    d.inject_addr    = getSystemStateAddress(elfPath, j.at("inject_addr").get<std::string>());//
+    d.sensor_addr    = getSystemStateAddress(elfPath, j.at("sensor_addr").get<std::string>());//
+    d.new_pc         = getSystemStateAddress(elfPath,      j.at("new_pc").get<std::string>());//
     d.target_count   = j.value("target_count",   uint64_t(0));
     d.min_expected   = j.value("min_expected",   0u);
     d.max_expected   = j.value("max_expected",   0u);
@@ -120,8 +153,8 @@ static void writeResult(const std::string&    resultFile,
 // ============================================================================
 
 int main(int argc, char* argv[]) {
-    const std::string inputFile  = (argc > 1) ? argv[1] : "Input.json";
-    const std::string resultFile = (argc > 2) ? argv[2] : "./campaign_result.json";
+    const std::string inputFile  = (argc > 1) ? argv[1] : CONFIG_JSON_PATH;
+    const std::string resultFile = (argc > 2) ? argv[2] : RESULT_JSON_PATH;
 
     // 1. Parse input
     std::ifstream ifs(inputFile);
@@ -136,8 +169,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    FaultDescriptor   desc       = parseFaultDescriptor(input);
     QemuSessionConfig sessionCfg = parseSessionConfig(input);
+
+    /* Construct full ELF path */
+    std::string elfPath = sessionCfg.firmware;
+    FaultDescriptor desc = parseFaultDescriptor(input ,elfPath );
 
     // 2. Run session
     QEMUSession session(sessionCfg);

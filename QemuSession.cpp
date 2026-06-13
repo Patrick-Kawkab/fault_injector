@@ -28,12 +28,16 @@
 #include <cstring>
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <chrono>
 #include <thread>
 
 // ── ACK byte sent by plugin after it receives the descriptor ─────────────────
 static constexpr uint8_t ACK_READY = 0xAC;
+
+// ── QEMU log path — UART output + plugin stderr go here ──────────────────────
+static constexpr const char* QEMU_LOG = "/tmp/qemu_session.log";
 
 // ── Fault type name helper for prints ────────────────────────────────────────
 static const char* faultTypeName(uint8_t ft) {
@@ -54,6 +58,24 @@ static const char* triggerName(uint8_t tr) {
         case TRIGGER_MEM_ACCESS: return "mem_access";
         default:                 return "unknown";
     }
+}
+
+// ── Print QEMU log to terminal, filtering out noisy per-instruction TB lines ─
+static void printQemuLog() {
+    std::ifstream log(QEMU_LOG);
+    if (!log.is_open()) {
+        std::cerr << "[QEMUSession] could not open " << QEMU_LOG << "\n";
+        return;
+    }
+    std::cout << "\n[QEMUSession] ---- QEMU log (UART + plugin output) ----------\n";
+    std::string line;
+    while (std::getline(log, line)) {
+        // Skip the noisy per-instruction TB lines e.g. "tb_trans:   [0]  PC=..."
+        // Keep everything else: UART output, plugin key events, inject lines
+        if (line.find("tb_trans:   [") != std::string::npos) continue;
+        std::cout << "  " << line << "\n";
+    }
+    std::cout << "[QEMUSession] ---- end of QEMU log ---------------------------\n\n";
 }
 
 // ============================================================================
@@ -169,12 +191,14 @@ bool QEMUSession::bindServer() {
 bool QEMUSession::launchQEMU() {
     std::ostringstream cmd;
     cmd << "qemu-system-arm"
-        << " -machine " << cfg_.machine
-        << " -cpu "     << cfg_.cpu
-        << " -kernel "  << cfg_.firmware
-        << " -plugin "  << cfg_.pluginPath
-                        << ",server=localhost:" << cfg_.serverPort
-        << " > /tmp/qemu_session.log 2>&1";
+        << " -machine "   << cfg_.machine
+        << " -cpu "       << cfg_.cpu
+        << " -kernel "    << cfg_.firmware
+        << " -nographic"                       // routes UART to stdout → log
+        << " -semihosting"                     // allows app to exit QEMU via bkpt 0xAB
+        << " -plugin "    << cfg_.pluginPath
+        << ",server=localhost:" << cfg_.serverPort
+        << " > " << QEMU_LOG << " 2>&1";      // UART + plugin stderr → same log file
 
     std::cout << "\n[QEMUSession] ---- Launching QEMU ----------------------------\n";
     std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
@@ -247,7 +271,6 @@ bool QEMUSession::sendDescriptor(const FaultDescriptor& desc) {
     }
     std::cout << "[QEMUSession] Descriptor written to socket (" << sent << " bytes)\n";
 
-    // Wait for ACK byte
     std::cout << "[QEMUSession] Waiting for ACK from plugin...\n";
     uint8_t ack = 0;
     ssize_t n   = ::read(pluginSock_, &ack, 1);
@@ -287,10 +310,11 @@ FaultResult QEMUSession::recvResult() {
         ::kill(qemuPid_, SIGKILL);
         ::waitpid(qemuPid_, &status, 0);
         qemuPid_ = -1;
+        printQemuLog();   // still print log so we can see what happened before timeout
         return result;
     }
 
-    // Read FaultResult binary
+    // Read FaultResult binary — plugin sends this just before closing the socket
     std::cout << "[QEMUSession] Reading FaultResult from plugin ("
               << sizeof(result) << " bytes)...\n";
 
@@ -298,14 +322,18 @@ FaultResult QEMUSession::recvResult() {
     if (n != static_cast<ssize_t>(sizeof(result))) {
         std::cerr << "[QEMUSession] ERROR: recvResult short read ("
                   << n << "/" << sizeof(result) << " bytes)\n";
+        printQemuLog();
         return result;
     }
 
     std::cout << "\n[QEMUSession] ---- Campaign result ---------------------------\n";
-    std::cout << "[QEMUSession]   injected   : " << (result.injected ? "YES" : "NO")    << "\n";
+    std::cout << "[QEMUSession]   injected   : " << (result.injected ? "YES"    : "NO")     << "\n";
     std::cout << "[QEMUSession]   passed     : " << (result.passed   ? "PASSED" : "FAILED") << "\n";
     std::cout << "[QEMUSession]   insn_count : " << result.insn_count << "\n";
     std::cout << "[QEMUSession] ============================================\n\n";
+
+    // Print log last — shows UART output + plugin key events in one block
+    printQemuLog();
 
     return result;
 }
