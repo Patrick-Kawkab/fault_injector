@@ -37,6 +37,7 @@ void vLCDTask(void *pvParameters);                         // LCD display update
 // ============================================================
 // Constants
 // ============================================================
+#define USE_QEMU_UART           1
 #define PWM_PERIOD              1000   // PWM counter top value
 #define THROTTLE_ON             80     // Duty cycle used when cruise wants acceleration
 #define THROTTLE_OFF            0      // Duty cycle used when throttle should be off
@@ -77,6 +78,10 @@ typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Two possible operating 
 volatile CruiseState cruise_state  = STATE_OFF; // Current cruise mode: OFF or ACTIVE
 volatile uint32_t    target_rpm    = 100;       // Target RPM selected by user buttons
 volatile uint32_t    current_rpm   = 0;         // Measured RPM calculated from encoder
+#ifdef USE_QEMU_UART
+volatile uint32_t    sim_rpm           = 0;         // Simulated RPM
+volatile uint32_t sim_throttle         = 0;         // 0..100%
+#endif
 volatile uint32_t    encoder_count = 0;         // Raw pulse count incremented by encoder ISR
 
 SemaphoreHandle_t xRPMMutex;                    // Protects current_rpm
@@ -87,10 +92,17 @@ SemaphoreHandle_t xStateMutex;                  // Protects cruise_state and tar
 // Used mainly for LCD timing. This blocks the CPU, but it is
 // acceptable for short LCD pulses / init timing in this design.
 // ============================================================
+#ifdef USE_QEMU_UART
+#define CPU_CLOCK_HZ    12000000UL
+#else
+#define CPU_CLOCK_HZ    80000000UL
+#endif
+
 void delay_ms(uint32_t ms) {
-    volatile uint32_t count = ms * (80000000 / 3000); // Approximate loop count for ms delay at 80MHz
-    while (count--);                                   // Wait until counter finishes
+    volatile uint32_t count = ms * (CPU_CLOCK_HZ / 3000); // Rough loop count for ~ms delay at 80MHz
+    while (count--);                                   // Burn CPU cycles until count reaches zero
 }
+
 
 // ============================================================
 // GPIO initialization
@@ -217,16 +229,19 @@ void PWM_SetDuty(uint32_t duty) {
 // LCD low-level enable pulse
 // LCD latches incoming nibble when E transitions.
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Pulse(void) {
     GPIO_PORTC_DATA_R |=  LCD_E;                   // Set LCD enable high
     delay_ms(1);                                   // Hold briefly
     GPIO_PORTC_DATA_R &= ~LCD_E;                   // Set LCD enable low -> data latched
     delay_ms(1);                                   // Wait for LCD to settle
 }
+#endif
 
 // ============================================================
 // Send a 4-bit nibble to LCD data lines D4..D7.
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Nibble(uint8_t nibble) {
     if (nibble & 0x01) GPIO_PORTC_DATA_R |= LCD_D4; else GPIO_PORTC_DATA_R &= ~LCD_D4; // Write bit0 to D4
     if (nibble & 0x02) GPIO_PORTC_DATA_R |= LCD_D5; else GPIO_PORTC_DATA_R &= ~LCD_D5; // Write bit1 to D5
@@ -234,55 +249,67 @@ void LCD_Nibble(uint8_t nibble) {
     if (nibble & 0x08) GPIO_PORTB_DATA_R |= LCD_D7; else GPIO_PORTB_DATA_R &= ~LCD_D7; // Write bit3 to D7
     LCD_Pulse();                                   // Latch nibble into LCD
 }
+#endif
 
 // ============================================================
 // Send command byte to LCD
 // RS = 0 tells LCD this is a command, not display data.
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Command(uint8_t cmd) {
     GPIO_PORTC_DATA_R &= ~LCD_RS;                  // RS = 0 -> command mode
     LCD_Nibble(cmd >> 4);                          // Send high nibble first
     LCD_Nibble(cmd & 0x0F);                        // Send low nibble second
     delay_ms(2);                                   // Let LCD execute the command
 }
+#endif
 
 // ============================================================
 // Send one character byte to LCD
 // RS = 1 tells LCD this is display data.
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Char(char c) {
     GPIO_PORTC_DATA_R |= LCD_RS;                   // RS = 1 -> character/data mode
     LCD_Nibble((uint8_t)c >> 4);                   // Send high nibble
     LCD_Nibble((uint8_t)c & 0x0F);                 // Send low nibble
     delay_ms(1);                                   // Small LCD processing delay
 }
+#endif
 
 // ============================================================
 // Send a null-terminated string to LCD
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_String(const char *str) {
     while (*str) LCD_Char(*str++);                 // Print characters until null terminator reached
 }
+#endif
 
 // ============================================================
 // Move LCD cursor to desired row/column
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_SetCursor(uint8_t row, uint8_t col) {
     uint8_t addr = (row == 0) ? (0x80 + col) : (0xC0 + col); // Compute DDRAM address for 16x2 LCD
     LCD_Command(addr);                              // Send set-cursor command
 }
+#endif
 
 // ============================================================
 // Clear LCD
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Clear(void) {
     LCD_Command(0x01);                             // LCD clear display command
     delay_ms(2);                                   // Clear command needs longer delay
 }
+#endif
 
 // ============================================================
 // LCD initialization for 4-bit mode
 // ============================================================
+#ifndef USE_QEMU_UART
 void LCD_Init(void) {
     delay_ms(50);                                  // Wait for LCD power-up stabilization
     GPIO_PORTC_DATA_R &= ~LCD_RS;                  // Ensure command mode
@@ -295,6 +322,7 @@ void LCD_Init(void) {
     LCD_Command(0x06);                             // Entry mode: increment cursor after write
     LCD_Clear();                                   // Clear LCD after init
 }
+#endif
 
 // ============================================================
 // Integer-to-string helper for LCD display
@@ -358,28 +386,63 @@ void GPIOPortD_Handler(void) {
 //  - If RPM becomes zero, system accepts it silently
 // ============================================================
 void vEncoderTask(void *pvParameters) {
-    TickType_t xLastWakeTime = xTaskGetTickCount(); // Store initial tick for periodic scheduling
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while (1) {
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(SAMPLE_PERIOD_MS)); // Run every 100 ms exactly
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(SAMPLE_PERIOD_MS));
 
-        uint32_t count;
-        taskENTER_CRITICAL();                       // Prevent race while copying shared pulse counter
-        count = encoder_count;                      // Snapshot encoder pulses collected by ISR
-        encoder_count = 0;                          // Reset pulse count for next sampling window
-        taskEXIT_CRITICAL();                        // End critical section
+        uint32_t rpm;
 
-        uint32_t rpm = (count * 60000UL) / (ENCODER_PPR * SAMPLE_PERIOD_MS); // Convert pulse count to RPM
+#ifdef USE_QEMU_UART
+        CruiseState state;
+        uint32_t target;
+        uint32_t throttle;
 
-        #ifdef USE_QEMU_UART
-        uart_puts("[ENC] RPM: "); uart_udec(rpm); uart_nl();    // Print on the QEMU terminal the current rpm
-        #endif
-
-        if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Lock RPM shared variable
-            current_rpm = rpm;                      // Publish new measured RPM
-            xSemaphoreGive(xRPMMutex);              // Unlock RPM mutex
+        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+            state = cruise_state;
+            target = target_rpm;
+            throttle = sim_throttle;
+            xSemaphoreGive(xStateMutex);
+        } else {
+            continue;
         }
-        // No zero-RPM safety logic here
+
+        if (state == STATE_ACTIVE) {
+            if (sim_rpm < target) {
+                sim_rpm += 15;
+                if (sim_rpm > target) sim_rpm = target;
+            } else if (sim_rpm > target) {
+                if (sim_rpm >= 10) sim_rpm -= 10;
+                else sim_rpm = 0;
+            }
+        } else {
+            uint32_t desired_rpm = throttle * 3;   // 0..300 RPM
+
+            if (sim_rpm < desired_rpm) {
+                sim_rpm += 10;
+                if (sim_rpm > desired_rpm) sim_rpm = desired_rpm;
+            } else if (sim_rpm > desired_rpm) {
+                if (sim_rpm >= 10) sim_rpm -= 10;
+                else sim_rpm = 0;
+            }
+        }
+
+        rpm = sim_rpm;
+        uart_puts("[MONITOR][ENC] RPM: "); uart_udec(rpm); uart_nl();
+#else
+        uint32_t count;
+        taskENTER_CRITICAL();
+        count = encoder_count;
+        encoder_count = 0;
+        taskEXIT_CRITICAL();
+
+        rpm = (count * 60000UL) / (ENCODER_PPR * SAMPLE_PERIOD_MS);
+#endif
+
+        if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            current_rpm = rpm;
+            xSemaphoreGive(xRPMMutex);
+        }
     }
 }
 
@@ -437,75 +500,114 @@ void vCruiseTask(void *pvParameters) {
 // button-release waits, but has NO watchdog protection.
 // ============================================================
 void vManualTask(void *pvParameters) {
-    TickType_t xLastWakeTime = xTaskGetTickCount(); // Save starting tick for periodic scheduling
+    TickType_t xLastWakeTime = xTaskGetTickCount();
 
     while (1) {
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20)); // Run every 20 ms
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
+
+#ifdef USE_QEMU_UART
+        int c = uart_getc_nonblock();
+
+        if (c >= 0) {
+            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                if (c == 'a') {
+                    cruise_state = STATE_ACTIVE;
+                    uart_puts("[MONITOR][MANUAL] Cruise ACTIVATED"); uart_nl();
+                } else if (c == 'd') {
+                    cruise_state = STATE_OFF;
+                    PWM_SetDuty(THROTTLE_OFF);
+                    uart_puts("[MONITOR][MANUAL] Cruise DEACTIVATED"); uart_nl();
+                } else if (c == '+') {
+                    if (target_rpm <= SPEED_MAX - SPEED_STEP) target_rpm += SPEED_STEP;
+                    else target_rpm = SPEED_MAX;
+                    uart_puts("[MONITOR][MANUAL] Target +"); uart_nl();
+                } else if (c == '-') {
+                    if (target_rpm >= SPEED_MIN + SPEED_STEP) target_rpm -= SPEED_STEP;
+                    else target_rpm = SPEED_MIN;
+                    uart_puts("[MONITOR][MANUAL] Target -"); uart_nl();
+                } else if (c == 'w') {
+                    if (sim_throttle <= 90) sim_throttle += 5;
+                    else sim_throttle = 100;
+                    uart_puts("[MONITOR][MANUAL] Pedal UP"); uart_nl();
+                } else if (c == 's') {
+                    if (sim_throttle >= 10) sim_throttle -= 5;
+                    else sim_throttle = 0;
+                    uart_puts("[MONITOR][MANUAL] Pedal DOWN"); uart_nl();
+                }
+                xSemaphoreGive(xStateMutex);
+            }
+        }
 
         CruiseState state;
-        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Safely read cruise state
-            state = cruise_state;                   // Snapshot current mode
-            xSemaphoreGive(xStateMutex);            // Release state mutex
-        } else { continue; }                        // Skip cycle if mutex unavailable
+        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+            state = cruise_state;
+            xSemaphoreGive(xStateMutex);
+        } else {
+            continue;
+        }
 
-        if (button_pressed(&GPIO_PORTE_DATA_R, (1 << 1))) { // If PE1 pressed -> increase target RPM
-            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
-                if (target_rpm <= SPEED_MAX - SPEED_STEP) target_rpm += SPEED_STEP; // Increase if still below max
-                else target_rpm = SPEED_MAX;         // Otherwise clamp to max
-                xSemaphoreGive(xStateMutex);         // Release mutex
+        if (state == STATE_OFF) {
+            PWM_SetDuty(sim_throttle);
+        }
+
+#else
+        CruiseState state;
+        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+            state = cruise_state;
+            xSemaphoreGive(xStateMutex);
+        } else {
+            continue;
+        }
+
+        if (button_pressed(&GPIO_PORTE_DATA_R, (1 << 1))) {
+            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                if (target_rpm <= SPEED_MAX - SPEED_STEP) target_rpm += SPEED_STEP;
+                else target_rpm = SPEED_MAX;
+                xSemaphoreGive(xStateMutex);
             }
-            uint32_t t = 0;                          // Release wait timeout counter
-            while (!(GPIO_PORTE_DATA_R & (1 << 1)) && t++ < BUTTON_RELEASE_TIMEOUT) // Wait until release or timeout
-                vTaskDelay(pdMS_TO_TICKS(1));        // Yield 1 ms each loop
+            uint32_t t = 0;
+            while (!(GPIO_PORTE_DATA_R & (1 << 1)) && t++ < BUTTON_RELEASE_TIMEOUT)
+                vTaskDelay(pdMS_TO_TICKS(1));
         }
 
-        if (button_pressed(&GPIO_PORTE_DATA_R, (1 << 0))) { // If PE0 pressed -> decrease target RPM
-            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
-                if (target_rpm >= SPEED_MIN + SPEED_STEP) target_rpm -= SPEED_STEP; // Decrease if above min
-                else target_rpm = SPEED_MIN;         // Otherwise clamp to min
-                xSemaphoreGive(xStateMutex);         // Release mutex
+        if (button_pressed(&GPIO_PORTE_DATA_R, (1 << 0))) {
+            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                if (target_rpm >= SPEED_MIN + SPEED_STEP) target_rpm -= SPEED_STEP;
+                else target_rpm = SPEED_MIN;
+                xSemaphoreGive(xStateMutex);
             }
-            uint32_t t = 0;                          // Release wait timeout counter
-            while (!(GPIO_PORTE_DATA_R & (1 << 0)) && t++ < BUTTON_RELEASE_TIMEOUT) // Wait until release or timeout
-                vTaskDelay(pdMS_TO_TICKS(1));        // Yield during wait
+            uint32_t t = 0;
+            while (!(GPIO_PORTE_DATA_R & (1 << 0)) && t++ < BUTTON_RELEASE_TIMEOUT)
+                vTaskDelay(pdMS_TO_TICKS(1));
         }
 
-        if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 4))) { // If PF4 pressed -> enable cruise mode
-            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
-                cruise_state = STATE_ACTIVE;         // Turn cruise on
-
-                #ifdef USE_QEMU_UART
-                uart_puts("[MONITOR][MANUAL] Cruise ACTIVATED"); uart_nl(); // Print on the QEMU terminal that the cruise control in on
-                #endif
-
-                xSemaphoreGive(xStateMutex);         // Release mutex
+        if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 4))) {
+            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                cruise_state = STATE_ACTIVE;
+                xSemaphoreGive(xStateMutex);
             }
-            led_set(0, 1, 0);                        // Green LED to indicate cruise enabled
-            uint32_t t = 0;                          // Release wait timeout counter
-            while (!(GPIO_PORTF_DATA_R & (1 << 4)) && t++ < BUTTON_RELEASE_TIMEOUT) // Wait for button release or timeout
-                vTaskDelay(pdMS_TO_TICKS(1));        // Yield during wait
+            led_set(0, 1, 0);
+            uint32_t t = 0;
+            while (!(GPIO_PORTF_DATA_R & (1 << 4)) && t++ < BUTTON_RELEASE_TIMEOUT)
+                vTaskDelay(pdMS_TO_TICKS(1));
         }
 
-        if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 0))) { // If PF0 pressed -> disable cruise mode
-            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
-                cruise_state = STATE_OFF;            // Turn cruise off
-
-                #ifdef USE_QEMU_UART
-                uart_puts("[MONITOR][MANUAL] Cruise DEACTIVATED"); uart_nl();   // Print on the QEMU terminal that the cruise control in off
-                #endif
-
-                xSemaphoreGive(xStateMutex);         // Release mutex
+        if (button_pressed(&GPIO_PORTF_DATA_R, (1 << 0))) {
+            if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+                cruise_state = STATE_OFF;
+                xSemaphoreGive(xStateMutex);
             }
-            PWM_SetDuty(THROTTLE_OFF);               // Immediately cut motor throttle
-            led_set(1, 0, 0);                        // Red LED indicates OFF state
-            uint32_t t = 0;                          // Release wait timeout counter
-            while (!(GPIO_PORTF_DATA_R & (1 << 0)) && t++ < BUTTON_RELEASE_TIMEOUT) // Wait until release or timeout
-                vTaskDelay(pdMS_TO_TICKS(1));        // Yield during wait
+            PWM_SetDuty(THROTTLE_OFF);
+            led_set(1, 0, 0);
+            uint32_t t = 0;
+            while (!(GPIO_PORTF_DATA_R & (1 << 0)) && t++ < BUTTON_RELEASE_TIMEOUT)
+                vTaskDelay(pdMS_TO_TICKS(1));
         }
 
-        if (state == STATE_OFF) {                    // Manual throttle only works when cruise is off
-            PWM_SetDuty(ADC_ReadThrottle());         // Use potentiometer reading to directly set motor power
+        if (state == STATE_OFF) {
+            PWM_SetDuty(ADC_ReadThrottle());
         }
+#endif
     }
 }
 
@@ -542,6 +644,7 @@ void vLCDTask(void *pvParameters) {
 
         uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
 
+        #ifndef USE_QEMU_UART
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
         uint32_to_str(kph, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
@@ -551,6 +654,7 @@ void vLCDTask(void *pvParameters) {
         uint32_to_str(target, num_buf, 4);          // Format target RPM
         LCD_String(num_buf);                        // Print target RPM
         LCD_String(state == STATE_ACTIVE ? " ACT" : " OFF"); // Print mode text
+        #endif
     }
 }
 
@@ -583,13 +687,19 @@ void vApplicationMallocFailedHook(void) {
 // ============================================================
 int main(void) {
     GPIO_Init();                                    // Initialize GPIO pins
-    uart_puts("[MONITOR] GPIO initialized")
+    #ifdef USE_QEMU_UART
+    uart_puts("[MONITOR] GPIO initialized"); uart_nl();
+    #endif
 
     ADC_Init();                                     // Initialize ADC for throttle potentiometer
-    uart_puts("[MONITOR] ADC initialized")
+    #ifdef USE_QEMU_UART
+    uart_puts("[MONITOR] ADC initialized"); uart_nl();
+    #endif
     
     PWM_Init();                                     // Initialize PWM for motor control
-    uart_puts("[MONITOR] PWM initialized")
+    #ifdef USE_QEMU_UART
+    uart_puts("[MONITOR] PWM initialized"); uart_nl();
+    #endif
 
     #ifndef USE_QEMU_UART
         LCD_Init();
@@ -599,7 +709,9 @@ int main(void) {
 
     xRPMMutex   = xSemaphoreCreateMutex();          // Create mutex for RPM shared variable
     xStateMutex = xSemaphoreCreateMutex();          // Create mutex for state shared variables
-    uart_puts("[MONITOR] Mutex Ready")
+    #ifdef USE_QEMU_UART
+    uart_puts("[MONITOR] Mutex Ready"); uart_nl();
+    #endif
 
     configASSERT(xRPMMutex   != NULL);              // Catch RPM mutex creation failure in debug
     configASSERT(xStateMutex != NULL);              // Catch state mutex creation failure in debug
@@ -607,9 +719,13 @@ int main(void) {
     configASSERT(xTaskCreate(vEncoderTask, "Encoder", 256, NULL, 3, NULL) == pdPASS); // Create encoder task
     configASSERT(xTaskCreate(vCruiseTask,  "Cruise",  256, NULL, 2, NULL) == pdPASS); // Create cruise task
     configASSERT(xTaskCreate(vManualTask,  "Manual",  256, NULL, 1, NULL) == pdPASS); // Create manual input task
+    #ifndef USE_QEMU_UART
     configASSERT(xTaskCreate(vLCDTask,     "LCD",     384, NULL, 1, NULL) == pdPASS); // Create LCD display task
+    #endif
 
-    uart_puts("[MONITOR] Tasks Ready")
+    #ifdef USE_QEMU_UART
+    uart_puts("[MONITOR] Tasks Ready"); uart_nl();
+    #endif
 
     vTaskStartScheduler();                          // Start FreeRTOS scheduler; tasks begin running
     while (1);                                      // Should never get here unless scheduler fails
