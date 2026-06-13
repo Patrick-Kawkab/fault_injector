@@ -21,6 +21,11 @@
 #define UART_FR_TXFF (1u << 5)                                     /* TX FIFO full */
 #endif
 
+#ifndef UART_FR_RXFE
+#define UART_FR_RXFE (1u << 4)   /* RX FIFO empty */
+#endif
+
+
 /* ── Send one character ── */
 static inline void uart_putc(char c) {
     while (UART_FR & UART_FR_TXFF);
@@ -64,5 +69,12 @@ static inline void uart_udec(uint32_t v) {
     while (v) { buf[i++] = '0' + (v % 10); v /= 10; }
     while (i--) uart_putc(buf[i]);
 }
+
+
+static inline int uart_getc_nonblock(void) {
+    if (UART_FR & UART_FR_RXFE)
+        return -1;
+    return (int)(UART_DR & 0xFF);
+}   
 
 #endif /* UART_H */
