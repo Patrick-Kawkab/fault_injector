@@ -64,7 +64,7 @@ static const char* triggerName(uint8_t tr) {
 static void printQemuLog() {
     std::ifstream log(QEMU_LOG);
     if (!log.is_open()) {
-        std::cerr << "[QEMUSession] could not open " << QEMU_LOG << "\n";
+        //std::cerr << "[QEMUSession] could not open " << QEMU_LOG << "\n";
         return;
     }
     std::cout << "\n[QEMUSession] ---- QEMU log (UART + plugin output) ----------\n";
@@ -189,18 +189,26 @@ bool QEMUSession::bindServer() {
 }
 
 bool QEMUSession::launchQEMU() {
-    std::ostringstream cmd;
-    cmd << "qemu-system-arm"
-        << " -machine "   << cfg_.machine
-        << " -cpu "       << cfg_.cpu
-        << " -kernel "    << cfg_.firmware
-        << " -nographic"                       // routes UART to stdout → log
-        << " -semihosting"                     // allows app to exit QEMU via bkpt 0xAB
-        << " -plugin "    << cfg_.pluginPath
-        << ",server=localhost:" << cfg_.serverPort
-        << " > " << QEMU_LOG << " 2>&1";      // UART + plugin stderr → same log file
+// Build the inner QEMU command — no log redirect; output goes live to xterm
+    std::ostringstream qemuCmd;
+    qemuCmd << "qemu-system-arm"
+            << " -machine "   << cfg_.machine
+            << " -cpu "       << cfg_.cpu
+            << " -kernel \""    << cfg_.firmware   << "\""
+            << " -nographic"
+            << " -semihosting"
+            << " -plugin \""    << cfg_.pluginPath  << "\""
+            << ",server=localhost:" << cfg_.serverPort;
 
-    std::cout << "\n[QEMUSession] ---- Launching QEMU ----------------------------\n";
+    // Wrap in xterm: -hold keeps window open after exit, -T sets title
+    std::ostringstream cmd;
+    cmd << "xterm"
+        << " -T \"QEMU Fault Injector — " << cfg_.firmware << "\""
+        << " -hold"
+        << " -e sh -c '" << qemuCmd.str() << "'"
+        << " &";   // background so fork+exec returns immediately
+
+    std::cout << "\n[QEMUSession] ---- Launching QEMU in xterm ----------------\n";
     std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
 
     qemuPid_ = ::fork();
@@ -209,11 +217,12 @@ bool QEMUSession::launchQEMU() {
         return false;
     }
     if (qemuPid_ == 0) {
+        // Child: exec xterm; xterm will be the process we track
         ::execl("/bin/sh", "sh", "-c", cmd.str().c_str(), nullptr);
         ::_exit(127);
     }
 
-    std::cout << "[QEMUSession] QEMU process started  PID=" << qemuPid_ << "\n";
+    std::cout << "[QEMUSession] xterm launched  PID=" << qemuPid_ << "\n";
     return true;
 }
 
