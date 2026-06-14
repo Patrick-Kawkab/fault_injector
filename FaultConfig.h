@@ -61,6 +61,7 @@ typedef struct {
     uint32_t  new_pc;           // redirect target   (set_pc)
     uint32_t  sensor_addr;      // address to watch  (sensor_corruption)
     uint64_t  target_count;     // instruction count trigger
+    uint64_t  observe_window;   // total instructions to observe after injection (memory/sensor_corruption)
 } FaultDescriptor;
 
 // ── Result — sent from plugin back to QEMUSession ────────────────────────────
