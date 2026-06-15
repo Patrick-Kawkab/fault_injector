@@ -781,6 +781,14 @@ int main(void) {
         LCD_Init();
     #endif
 
+    #ifdef FAULT_INJECTION_TEST
+    // Pre-activate cruise so fault injection tests run fully automated
+    cruise_state = STATE_ACTIVE;
+    target_rpm   = 100;
+    uart_puts("[MONITOR] FAULT_INJECTION_TEST: cruise pre-activated\n");
+    #endif
+
+
     led_set(1, 0, 0);                               // Red LED at startup = system initially OFF
 
     xRPMMutex   = xSemaphoreCreateMutex();          // Create mutex for RPM shared variable

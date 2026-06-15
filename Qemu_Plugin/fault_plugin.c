@@ -56,6 +56,10 @@ static struct qemu_plugin_register *g_pc_reg_handle   = NULL;
 // Translation block counter for prints
 static uint64_t g_tb_count = 0;
 
+// observe globals
+static bool     g_observe_mode   = false;
+static uint64_t g_observe_until  = 0;     // insn count deadline
+
 // ============================================================================
 //  Name helpers for prints
 // ============================================================================
@@ -183,35 +187,84 @@ static bool guest_write_u8(uint64_t vaddr, uint8_t val)
 //  Fault injection
 // ============================================================================
 
+/*
 static void do_memory_corruption(void)
 {
     fprintf(stderr, "[fault_plugin] insn_exec: TRIGGER HIT"
             "  PC=0x%08X  insn_count=%" PRIu64 "\n",
             g_fault.target_addr, g_insn_count);
-    fprintf(stderr, "[fault_plugin] insn_exec: injecting memory_corruption"
-            "  addr=0x%08X  value=0x%02X\n",
-            g_fault.inject_addr, g_fault.injected_value);
 
-    if (guest_write_u8(g_fault.inject_addr, g_fault.injected_value)) {
-        // Read back immediately to confirm the write landed
-        uint8_t actual = 0;
-        bool readok = guest_read_u8(g_fault.inject_addr, &actual);
-        g_injected = true;
-        g_passed   = readok &&
-                     actual >= g_fault.min_expected &&
-                     actual <= g_fault.max_expected;
-        fprintf(stderr, "[fault_plugin] INJECT memory_corruption: "
-                "wrote 0x%02X to 0x%08X  readback=0x%02X"
-                "  expected=[0x%02X,0x%02X]  insn=%" PRIu64 "  -> %s\n",
-                g_fault.injected_value, g_fault.inject_addr,
-                actual, g_fault.min_expected, g_fault.max_expected,
-                g_insn_count, g_passed ? "PASSED" : "FAILED");
-    } else {
+    if (!guest_write_u8(g_fault.inject_addr, g_fault.injected_value)) {
         fprintf(stderr, "[fault_plugin] INJECT memory_corruption FAILED:"
                 " write error at 0x%08X\n", g_fault.inject_addr);
+        return;
+    }
+
+    g_injected = true;
+    fprintf(stderr, "[fault_plugin] INJECT memory_corruption: "
+            "wrote 0x%02X to 0x%08X\n",
+            g_fault.injected_value, g_fault.inject_addr);
+
+    // If sensor_addr is set, enter observation mode instead of immediate eval
+    if (g_fault.sensor_addr != 0 && g_fault.target_count != 0) {
+        g_observe_mode  = true;
+        g_observe_until = g_insn_count + g_fault.observe_window;
+        fprintf(stderr, "[fault_plugin] OBSERVE: watching 0x%08X"
+                " for value in [0x%02X, 0x%02X]"
+                " deadline=insn%" PRIu64 "\n",
+                g_fault.sensor_addr,
+                g_fault.min_expected, g_fault.max_expected,
+                g_observe_until);
+    } else {
+        // Legacy immediate readback (no observation)
+        uint8_t actual = 0;
+        bool readok  = guest_read_u8(g_fault.inject_addr, &actual);
+        g_passed     = readok &&
+                       actual >= g_fault.min_expected &&
+                       actual <= g_fault.max_expected;
+        fprintf(stderr, "[fault_plugin] INJECT result: readback=0x%02X -> %s\n",
+                actual, g_passed ? "PASSED" : "FAILED");
     }
 }
+*/
+static void do_memory_corruption(void)
+{
+    fprintf(stderr, "[fault_plugin] insn_exec: TRIGGER HIT"
+            "  PC=0x%08X  insn_count=%" PRIu64 "\n",
+            g_fault.target_addr, g_insn_count);
 
+    if (!guest_write_u8(g_fault.inject_addr, g_fault.injected_value)) {
+        fprintf(stderr, "[fault_plugin] INJECT memory_corruption FAILED:"
+                " write error at 0x%08X\n", g_fault.inject_addr);
+        return;
+    }
+
+    g_injected = true;
+    fprintf(stderr, "[fault_plugin] INJECT memory_corruption:"
+            " wrote 0x%02X to 0x%08X — firmware now runs freely\n",
+            g_fault.injected_value, g_fault.inject_addr);
+
+    // Enter observation mode if sensor_addr is configured
+    if (g_fault.sensor_addr != 0 && g_fault.observe_window != 0) {
+        g_observe_mode  = true;
+        g_observe_until = g_insn_count + g_fault.observe_window;
+        fprintf(stderr,
+                "[fault_plugin] OBSERVE STARTED\n"
+                " inject_addr=0x%08X\n"
+                " sensor_addr=0x%08X\n"
+                " current_insn=%" PRIu64 "\n"
+                " observe_window=%" PRIu64 "\n"
+                " observe_until=%" PRIu64 "\n",
+                g_fault.inject_addr,
+                g_fault.sensor_addr,
+                g_insn_count,
+                g_fault.observe_window,
+                g_observe_until);
+    } else {
+        // No observation configured — pass criteria is just that injection happened
+        g_passed = true;
+    }
+}
 static void do_instruction_skip(void)
 {
     fprintf(stderr, "[fault_plugin] insn_exec: TRIGGER HIT"
@@ -372,15 +425,41 @@ static void send_result(void) {
 }
 
 // ============================================================================
-//  TCG callbacks
+// helper — sends result then kills QEMU
 // ============================================================================
 
+static void finish_campaign(void)
+{
+
+    fprintf(stderr, "[fault_plugin] ENTER finish_campaign\n");
+
+    send_result();
+
+    fprintf(stderr, "[fault_plugin] ABOUT TO SIGKILL QEMU\n");
+
+    kill(getpid(), SIGKILL);
+
+    fprintf(stderr, "[fault_plugin] AFTER SIGKILL\n");
+}
+
+
+// ============================================================================
+//  TCG callbacks
+// ============================================================================
+/*
 static void vcpu_insn_exec_cb(unsigned int vcpu_idx, void *userdata) {
     (void)vcpu_idx;
     if (g_injected) return;
  
     uint64_t pc = (uint64_t)(uintptr_t)userdata;
     g_insn_count++;
+ 
+    // ← ADD THIS TEMPORARILY
+    if (g_insn_count % 100000 == 0) {
+        fprintf(stderr, "[fault_plugin] insn_count=%" PRIu64
+                "  target=%" PRIu64 "  injected=%d\n",
+                g_insn_count, g_fault.target_count, g_injected);
+    }
  
     switch (g_fault.trigger) {
     case TRIGGER_PC:
@@ -390,15 +469,115 @@ static void vcpu_insn_exec_cb(unsigned int vcpu_idx, void *userdata) {
         }
         break;
     case TRIGGER_INSN_COUNT:
-        if (g_insn_count == g_fault.target_count) {
+        if (g_insn_count >= g_fault.target_count) {
             if      (g_fault.fault_type == FAULT_BIT_FLIP) do_bit_flip();
             else if (g_fault.fault_type == FAULT_SET_PC)   do_set_pc();
+            else if (g_fault.fault_type == FAULT_MEMORY_CORRUPTION) do_memory_corruption();
         }
         break;
     default: break;
     }
+    // ── Observation loop (runs every instruction after injection) ─────────────
+    if (!g_observe_mode || g_passed) return;
+
+    // Keep hammering inject_addr with the fault value so firmware can't fix it
+    guest_write_u8(g_fault.inject_addr, g_fault.injected_value);
+
+    // Every 50k instructions check the observe address
+    if (g_insn_count % 50000 == 0) {
+        uint8_t state_val = 0;
+        if (guest_read_u8(g_fault.sensor_addr, &state_val)) {
+            fprintf(stderr, "[fault_plugin] OBSERVE insn=%" PRIu64
+                    "  sensor_addr=0x%08X  val=0x%02X"
+                    "  expected=[0x%02X,0x%02X]\n",
+                    g_insn_count, g_fault.sensor_addr,
+                    state_val, g_fault.min_expected, g_fault.max_expected);
+
+            if (state_val >= g_fault.min_expected &&
+                state_val <= g_fault.max_expected) {
+                g_passed       = true;
+                g_observe_mode = false;
+                fprintf(stderr, "[fault_plugin] OBSERVE: PASSED —"
+                        " sensor reacted as expected\n");
+            }
+        }
+    }
+
+    // Deadline expired → FAIL
+    if (g_insn_count >= g_observe_until && !g_passed) {
+        g_observe_mode = false;
+        g_passed       = false;
+        fprintf(stderr, "[fault_plugin] OBSERVE: FAILED —"
+                " sensor did not react within deadline\n");
+    }
 }
- 
+
+*/
+
+static void vcpu_insn_exec_cb(unsigned int vcpu_idx, void *userdata)
+{
+    (void)vcpu_idx;
+    uint64_t pc = (uint64_t)(uintptr_t)userdata;
+    g_insn_count++;
+
+    // ── Pre-injection: watch for trigger ─────────────────────────────────
+    if (!g_injected) {
+        switch (g_fault.trigger) {
+        case TRIGGER_PC:
+            if ((uint32_t)pc == g_fault.target_addr) {
+                if      (g_fault.fault_type == FAULT_MEMORY_CORRUPTION) do_memory_corruption();
+                else if (g_fault.fault_type == FAULT_INSTRUCTION_SKIP)  do_instruction_skip();
+            }
+            break;
+        case TRIGGER_INSN_COUNT:
+            if (g_insn_count >= g_fault.target_count) {
+                if      (g_fault.fault_type == FAULT_MEMORY_CORRUPTION) do_memory_corruption();
+                else if (g_fault.fault_type == FAULT_BIT_FLIP)          do_bit_flip();
+                else if (g_fault.fault_type == FAULT_SET_PC)            do_set_pc();
+            }
+            break;
+        default:
+            break;
+        }
+        return;
+    }
+
+    // ── Post-injection: passive observation only ──────────────────────────
+    // No writes — just watch sensor_addr for expected reaction
+    if (!g_observe_mode || g_passed || g_result_sent) return;
+
+    // Poll every 50k instructions — watch inject_addr for firmware recovery
+    if (g_insn_count % 50000 != 0) return;
+
+    uint8_t val = 0;
+    if (!guest_read_u8(g_fault.inject_addr, &val)) return;  // ← inject_addr not sensor_addr
+
+    fprintf(stderr, "[fault_plugin] OBSERVE insn=%" PRIu64
+            "  inject_addr=0x%08X  val=0x%02X"
+            "  expected=[0x%02X,0x%02X]\n",
+            g_insn_count, g_fault.inject_addr, val,
+            g_fault.min_expected, g_fault.max_expected);
+
+    // PASS: firmware overwrote the corrupted value with a valid one
+    if (val >= g_fault.min_expected && val <= g_fault.max_expected) {
+        g_passed       = true;
+        g_observe_mode = false;
+        fprintf(stderr, "[fault_plugin] OBSERVE: PASSED —"
+                " firmware recovered the corrupted value\n");
+        finish_campaign();
+        return;
+    }
+
+    // Deadline expired → firmware never recovered → FAIL
+    if (g_insn_count >= g_observe_until) {
+        g_observe_mode = false;
+        g_passed       = false;
+        fprintf(stderr, "[fault_plugin] OBSERVE: FAILED —"
+                " firmware did not recover within deadline\n");
+        finish_campaign();
+    }
+}
+
 static void vcpu_mem_access_cb(unsigned int vcpu_idx,
                                 qemu_plugin_meminfo_t info,
                                 uint64_t vaddr, void *userdata) {

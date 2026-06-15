@@ -198,20 +198,22 @@ bool QEMUSession::launchQEMU() {
             << " -nographic"
             << " -semihosting"
             << " -plugin \""    << cfg_.pluginPath  << "\""
-            << ",server=localhost:" << cfg_.serverPort;
+            << ",server=localhost:" << cfg_.serverPort
+            << " 2>&1 | tee " << QEMU_LOG;  // ← stdout+stderr to both xterm AND log file
 
     // Wrap in xterm: -hold keeps window open after exit, -T sets title
     std::ostringstream cmd;
     cmd << "xterm"
         << " -T \"QEMU Fault Injector — " << cfg_.firmware << "\""
-        << " -hold"
-        << " -e sh -c '" << qemuCmd.str() << "'"
-        << " &";   // background so fork+exec returns immediately
+        //<< " -hold"
+        << " -e sh -c '" << qemuCmd.str() << "'";
+        //<< " &";   // background so fork+exec returns immediately
 
     std::cout << "\n[QEMUSession] ---- Launching QEMU in xterm ----------------\n";
     std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
 
     qemuPid_ = ::fork();
+    std::cout << "[QEMUSession] tracked PID=" << qemuPid_ << "\n";
     if (qemuPid_ < 0) {
         std::cerr << "[QEMUSession] fork() failed: " << strerror(errno) << "\n";
         return false;
@@ -271,6 +273,9 @@ bool QEMUSession::sendDescriptor(const FaultDescriptor& desc) {
     std::cout << "[QEMUSession]   max_expected   : 0x" << std::hex << (int)desc.max_expected << std::dec << "\n";
     std::cout << "[QEMUSession]   struct size    : "   << sizeof(desc) << " bytes\n";
 
+    //temp
+    std::cout << "sizeof(FaultDescriptor)=" << sizeof(FaultDescriptor) << "\n";
+
     ssize_t sent = ::write(pluginSock_, &desc, sizeof(desc));
     if (sent != static_cast<ssize_t>(sizeof(desc))) {
         std::cerr << "[QEMUSession] ERROR: sendDescriptor write failed ("
@@ -292,7 +297,7 @@ bool QEMUSession::sendDescriptor(const FaultDescriptor& desc) {
     std::cout << "[QEMUSession] ACK received (0xAC) — plugin is ready\n";
     return true;
 }
-
+/*
 FaultResult QEMUSession::recvResult() {
     FaultResult result{};
 
@@ -344,6 +349,65 @@ FaultResult QEMUSession::recvResult() {
     // Print log last — shows UART output + plugin key events in one block
     printQemuLog();
 
+    return result;
+}
+*/
+FaultResult QEMUSession::recvResult() {
+    FaultResult result{};
+
+    std::cout << "\n[QEMUSession] ---- Waiting for result from plugin -----------\n";
+
+    // ── Step 1: read result first (plugin sends it before killing QEMU) ──
+    // Set a read timeout so we don't block forever
+    struct timeval tv;
+    tv.tv_sec  = cfg_.timeoutSecs;
+    tv.tv_usec = 0;
+    setsockopt(pluginSock_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    std::cout << "[QEMUSession] Reading FaultResult from plugin ("
+              << sizeof(result) << " bytes)...\n";
+
+    ssize_t n = ::read(pluginSock_, &result, sizeof(result));
+    if (n != static_cast<ssize_t>(sizeof(result))) {
+        std::cerr << "[QEMUSession] ERROR: recvResult short read ("
+                  << n << "/" << sizeof(result) << " bytes)\n";
+        printQemuLog();
+        return result;
+    }
+
+    std::cout << "\n[QEMUSession] ---- Campaign result ---------------------------\n";
+    std::cout << "[QEMUSession]   injected   : " << (result.injected ? "YES"    : "NO")     << "\n";
+    std::cout << "[QEMUSession]   passed     : " << (result.passed   ? "PASSED" : "FAILED") << "\n";
+    std::cout << "[QEMUSession]   insn_count : " << result.insn_count << "\n";
+    std::cout << "[QEMUSession] ============================================\n\n";
+
+    // ── Step 2: now wait for QEMU to exit (plugin sent SIGTERM to itself) 
+    std::cout << "[QEMUSession] Waiting for QEMU to exit after result received...\n";
+
+    auto deadline = std::chrono::steady_clock::now()
+                  + std::chrono::seconds(10);   // short wait, QEMU should exit fast
+    int status = 0;
+
+    while (std::chrono::steady_clock::now() < deadline) {
+        pid_t r = ::waitpid(qemuPid_, &status, WNOHANG);
+        if (r > 0) {
+            std::cout << "[QEMUSession] QEMU exited  PID=" << r
+                      << "  status=" << status << "\n";
+            qemuPid_ = -1;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    // If QEMU still running after 10s, kill it
+    if (qemuPid_ > 0) {
+        std::cout << "[QEMUSession] QEMU still running — sending SIGTERM\n";
+        ::kill(qemuPid_, SIGTERM);
+        ::waitpid(qemuPid_, &status, 0);
+        qemuPid_ = -1;
+    }
+
+    printQemuLog();
     return result;
 }
 

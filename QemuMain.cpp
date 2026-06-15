@@ -90,13 +90,20 @@ static FaultDescriptor parseFaultDescriptor(const json& j ,const std::string& el
 
     d.fault_type     = kFaultTypeMap.at(j.at("fault_type").get<std::string>());
     d.trigger        = kTriggerMap  .at(j.at("trigger")   .get<std::string>());
-    d.injected_value = j.value("injected_value", 0u);
-    d.bit_pos        = j.value("bit_pos",        0u);
-    d.target_addr    = getSystemStateAddress(elfPath, j.at("target_addr").get<std::string>());//
+
+    std::string target_sym  = j.at("target_addr").get<std::string>();
+    d.target_addr           = target_sym.empty() ? 0 : getSystemStateAddress(elfPath, target_sym);
+    std::string new_pc_sym  = j.at("new_pc").get<std::string>();
+    d.new_pc                = new_pc_sym.empty() ? 0 : getSystemStateAddress(elfPath, new_pc_sym);
+
     d.inject_addr    = getSystemStateAddress(elfPath, j.at("inject_addr").get<std::string>());//
     d.sensor_addr    = getSystemStateAddress(elfPath, j.at("sensor_addr").get<std::string>());//
-    d.new_pc         = getSystemStateAddress(elfPath,      j.at("new_pc").get<std::string>());//
+
     d.target_count   = j.value("target_count",   uint64_t(0));
+    d.observe_window = j.value("observe_window", uint64_t(0));
+
+    d.injected_value = j.value("injected_value", 0u);
+    d.bit_pos        = j.value("bit_pos",        0u);
     d.min_expected   = j.value("min_expected",   0u);
     d.max_expected   = j.value("max_expected",   0u);
     return d;
@@ -109,7 +116,7 @@ static QemuSessionConfig parseSessionConfig(const json& j) {
     cfg.firmware    = j.at   ("firmware")   .get<std::string>();
     cfg.pluginPath  = j.value("plugin_path", std::string("./fault_plugin.so"));
     cfg.machine     = j.value("machine",     std::string("lm3s6965evb"));
-    cfg.cpu         = j.value("cpu",         std::string("cortex-m3"));
+    cfg.cpu         = j.value("cpu",         std::string("cortex-m4 "));
     cfg.serverPort  = j.value("server_port", 9001);
     cfg.timeoutSecs = j.value("timeout_secs", 30);
     return cfg;

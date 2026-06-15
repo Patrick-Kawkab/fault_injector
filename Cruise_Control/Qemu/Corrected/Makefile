@@ -32,7 +32,8 @@ CFLAGS  = -mthumb \
           -Wall \
           -ffunction-sections \
           -fdata-sections \
-          $(INCLUDES)
+          $(INCLUDES) \
+          $(EXTRA_CFLAGS)
 
 # ── Linker Flags ───────────────────────────────
 LDFLAGS = -mthumb \
@@ -44,15 +45,21 @@ LDFLAGS = -mthumb \
           -Wl,--gc-sections \
           -Wl,-Map=main.map
 
-# ── Targets ────────────────────────────────────
-all: main.bin
+# ── Output name (overridable) ──────────────────
+OUTPUT ?= main
 
-main.elf: $(SRCS)
+# ── Targets ────────────────────────────────────
+all: $(OUTPUT).bin
+
+$(OUTPUT).elf: $(SRCS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 	arm-none-eabi-size $@
 
-main.bin: main.elf
+$(OUTPUT).bin: $(OUTPUT).elf
 	$(OBJCOPY) -O binary $< $@
+
+fault_test:
+	$(MAKE) EXTRA_CFLAGS="-DFAULT_INJECTION_TEST -DUSE_QEMU_UART" OUTPUT=main_fault_test
 
 flash: main.bin
 	sudo lm4flash main.bin
@@ -60,4 +67,4 @@ flash: main.bin
 clean:
 	rm -f *.elf *.bin *.map
 
-.PHONY: all clean flash
+.PHONY: all clean flash fault_test
