@@ -213,7 +213,7 @@ bool QEMUSession::launchQEMU() {
     std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
 
     qemuPid_ = ::fork();
-    std::cout << "[QEMUSession] tracked PID=" << qemuPid_ << "\n";
+
     if (qemuPid_ < 0) {
         std::cerr << "[QEMUSession] fork() failed: " << strerror(errno) << "\n";
         return false;
