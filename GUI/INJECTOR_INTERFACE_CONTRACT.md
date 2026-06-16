@@ -19,7 +19,7 @@ list back with the verdict filled in.
 ## 1. Invocation
 
 The orchestrator launches the injector as a child process, headless (no
-terminal), after OpenOCD and GDB are already up:
+terminal), after OpenOCD is already up (OpenOCD is the debugger — there is no separate GDB process):
 
 ```
 <injector> --config <config.json> --out <result.json> --backend <tiva|qemu> --gdb <host:port>
@@ -50,7 +50,8 @@ Process behaviour the orchestrator depends on:
     "mode": "HARDWARE",
     "target": "ARM",
     "asil_level": "ASIL-D",
-    "backend": "tiva",
+    "machine": "lm3s6965evb",
+    "cpu": "cortex-m4",
     "gdb": "localhost:3333"
   },
   "faults": [
@@ -65,7 +66,7 @@ Process behaviour the orchestrator depends on:
       "max": 2,
       "duration_ms": 3500,
       "interval_ms": 50,
-      "delay_ms": 0,
+      "delay_ms": 10,
       "bit_position": 0
     }
   ]
@@ -80,8 +81,9 @@ Process behaviour the orchestrator depends on:
 | `mode` | string | `HARDWARE` (tiva) or `EMULATION` (qemu). |
 | `target` | string | Architecture, currently `ARM`. |
 | `asil_level` | string | `ASIL-A` … `ASIL-D`. Drives the orchestrator's pass/fail thresholds, not the injection. |
-| `backend` | string | Mirror of `--backend`. |
-| `gdb` | string | Mirror of `--gdb`. |
+| `machine` | string | Target board / QEMU machine, e.g. `lm3s6965evb`. User-selected in the UI. |
+| `cpu` | string | CPU core, e.g. `cortex-m4` / `cortex-m3`. User-selected in the UI. |
+| `gdb` | string | Endpoint the injector dials, e.g. `localhost:3333`. The port is user-selected (3333 / 4444 / 1234 / 9001). |
 
 ### `faults[]` (one object per injection)
 
@@ -97,8 +99,10 @@ Process behaviour the orchestrator depends on:
 | `max` | int | High end of the valid range. |
 | `duration_ms` | int | How long to keep injecting the fault, in ms. Must exceed the firmware's own fault‑reaction threshold or the system never reacts (see sizing note). |
 | `interval_ms` | int | How often to re‑inject during the hold window, in ms. Must be smaller than the firmware's sampling period so re‑injection beats any ISR that overwrites the value. |
-| `delay_ms` | int | Wait this long after start before injecting. `0` = immediate. |
+| `delay_ms` | int | **ASIL recovery deadline (ms)** — the injector FAILs any injection whose recovery is later than this. Same for every fault in the campaign (from the ASIL: A 50, B 30, C 20, D 10). Distinct from the `task_delay` magnitude in `value`. |
 | `bit_position` | int | Bit to flip when `fault_type == "bit_flip"`; ignored otherwise. |
+
+> **Varied campaigns:** the `faults[]` entries may be identical (same fault ×N) or distinct (a user-built list repeated to reach N). Either way each entry is self-contained and processed independently by `id`; the shape is unchanged.
 
 > **Per‑type field use** (the parser keys off `fault_type`): `sensor_corruption` → `variable` + `value` + `system_state`; `memory_corruption` → `variable` + `value`; `bit_flip` → `variable` + `bit_position`; `pc_error` → `address` only; `task_delay` → `variable` + `value` (= delay ms) + `system_state`. Unused fields are still present, just empty/zero.
 
@@ -140,8 +144,6 @@ Same shape as the input, with `id` + `result` guaranteed on every fault.
       "min": 0,
       "max": 2,
       "result": "FAIL",
-      "reaction_ms": 7.4,
-      "detected": true,
       "note": "cruise control did not disengage"
     }
   ]
@@ -175,9 +177,9 @@ fault." If your `FAILED` currently means something else, flag it — do not sile
 
 | Field | Type | Effect if present |
 | --- | --- | --- |
-| `reaction_ms` | number | Time to reach the safe state. Restores the FTTI timing criterion and the reaction‑time chart. Without it, those are hidden. |
-| `detected` | bool | Whether the safety mechanism flagged the fault before reacting. |
 | `note` | string | Free text shown verbatim in the results table's "system response" column. |
+
+> The injector does **not** send `reaction_ms` or `detected`. It cannot measure an exact reaction time; it compares recovery time to `delay_ms` (the ASIL deadline) and a late recovery is simply reported as `FAIL`. Lateness therefore shows up in the handling rate, not as a separate field.
 
 ### Optional `meta`
 
@@ -218,8 +220,8 @@ To conform:
 2. Change `result` values to the `PASS` / `FAIL` / `ERROR` enum (your `FAILED` → `FAIL`, assuming it means "system did not handle it").
 3. Carry `variable` (the variable name) instead of a hex `address`; everything else (`id`, `fault_type`, `value`, `min`, `max`) already matches.
 
-Optional but recommended: add `reaction_ms` per fault and `overhead_pct` in
-`meta` so the ISO 26262 verdict shows timing, not just a pass/fail count.
+Optional but recommended: add `overhead_pct` in `meta` so the ISO 26262 verdict
+includes runtime overhead, not just the pass/fail count.
 
 ---
 
@@ -227,5 +229,5 @@ Optional but recommended: add `reaction_ms` per fault and `overhead_pct` in
 
 - Add `firmware` to `FaultConfig` and derive `mode`/`target` from the backend.
 - Add an input serializer that emits the §2 shape (renaming `min_value`/`max_value`/`fault_value` → `min`/`max`/`value`).
-- Add an output reader that parses the §3 shape, maps `result` → outcome, and degrades the timing UI gracefully when `reaction_ms` is absent.
+- Add an output reader that parses the §3 shape and maps `result` → outcome (PASS/FAIL/ERROR); no reaction time is expected.
 - The mock injector stays the default fallback, so the demo runs with no hardware.

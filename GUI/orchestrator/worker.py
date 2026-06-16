@@ -117,10 +117,9 @@ class OrchestratorWorker(QThread):
                     # pass -> contains "✓" and "SAFE STATE"
                     # fail -> contains "✗" and "FAILED"
                     if case["outcome"] == "Pass":
-                        rt = f" ({case['reaction_ms']}ms)" if case.get("reaction_ms") is not None else ""
                         self.log_line.emit(
                             f"[{case['id']}] ✓ SAFE STATE reached — "
-                            f"{case['system_response']}{rt}"
+                            f"{case['system_response']}"
                         )
                     elif case["outcome"] == "Error":
                         self.log_line.emit(

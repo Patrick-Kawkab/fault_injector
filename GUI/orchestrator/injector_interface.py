@@ -67,9 +67,12 @@ class InjectorInterface:
         self._lock = threading.Lock()
         self._aborted = False
 
-        # The endpoint the injector dials (parsed from the target's args).
+        # The endpoint the injector dials — user-selected port (config.gdb_port),
+        # overriding the target's default so the UI dropdown is authoritative.
         args = target.injector_args()
-        self._gdb = args[args.index("--gdb") + 1] if "--gdb" in args else ""
+        self._gdb = f"localhost:{config.gdb_port}"
+        if "--gdb" in args:
+            args[args.index("--gdb") + 1] = self._gdb
 
         # Resolve the command once, up front, so the worker can ask whether
         # we are running the mock before deciding to bring up real hardware.
@@ -85,7 +88,7 @@ class InjectorInterface:
         ] + args
 
     def _write_config(self) -> None:
-        payload = self.config.to_injector_input(count=CAMPAIGN_SIZE, gdb=self._gdb)
+        payload = self.config.to_injector_input()
         with open(self.config_path, "w") as fh:
             json.dump(payload, fh, indent=2)
 

@@ -10,13 +10,11 @@ the binary or hardware exists. Point InjectorInterface at the compiled binary
 Contract behaviour:
   - reads the ``{meta, faults[]}`` input from ``--config``,
   - performs each fault (simulated) and writes ``{meta, faults[]}`` to ``--out``,
-    where each fault gains ``result`` (PASS/FAIL) and, since this mock has a
-    clock, ``reaction_ms`` + ``detected``,
+    where each fault gains ``result`` (PASS = recovered within the ASIL deadline,
+    FAIL = late or never). No reaction_ms / detected: the injector only compares
+    the recovery time to the ASIL deadline (``delay_ms``) and reports the verdict,
   - streams ``progress`` + ``log`` lines on stdout so the live monitor moves
     while it runs (these are optional in the contract).
-
-The orchestrator owns the final verdict: a PASS whose ``reaction_ms`` exceeds the
-ASIL FTTI is still counted as a failure (the hazard window opened).
 
 Usage:
     python mock_injector.py --config <in.json> --out <result.json> [--backend ...] [--gdb ...]
@@ -60,11 +58,12 @@ def main() -> int:
     faults_in = cfg.get("faults", [])
     asil = meta.get("asil_level", "ASIL-D")
     ftti = ASIL_FTTI_MS.get(asil, 10)
-    micro = meta.get("micro", args.backend)
+    machine = meta.get("machine", "?")
+    cpu = meta.get("cpu", "?")
     firmware = meta.get("firmware", "firmware.elf")
     total = len(faults_in)
 
-    emit({"type": "log", "message": f"[CONN]  Mock injector up (micro={micro}, mode={meta.get('mode', '?')})"})
+    emit({"type": "log", "message": f"[CONN]  Mock injector up (machine={machine}, cpu={cpu}, mode={meta.get('mode', '?')})"})
     emit({"type": "log", "message": f"[INIT]  Firmware {firmware} on {meta.get('target', 'ARM')}, safety mechanisms active"})
     emit({"type": "log", "message": f"[INIT]  FTTI for {asil}: {ftti}ms · {total} injections"})
 
@@ -82,23 +81,13 @@ def main() -> int:
         time.sleep(0.08)
         emit({"type": "log", "message": f"[TC-{fid:03d}] injecting value={val} into {var}"})
 
-        detect_prob = 0.96
-        react_prob = 0.97
-
-        detected = rng.random() < detect_prob
-        result = "FAIL"
-        reaction_ms = None
-        note = None
-        if not detected:
-            note = UNSAFE_TEXT
-        elif rng.random() >= react_prob:
-            note = DETECTED_NO_REACTION
+        # The injector compares recovery time to the ASIL deadline (delay_ms)
+        # and reports PASS (recovered in time) or FAIL (late or never). It cannot
+        # measure the exact reaction time, so none is sent.
+        if rng.random() < 0.90:
+            result, note = "PASS", None
         else:
-            result = "PASS"
-            if rng.random() < 0.88:
-                reaction_ms = round(rng.uniform(1.5, ftti * 0.85), 1)
-            else:
-                reaction_ms = round(rng.uniform(ftti * 0.95, ftti * 1.6), 1)  # late → FAIL at the verdict
+            result, note = "FAIL", UNSAFE_TEXT
 
         entry = {
             "id": fid,
@@ -108,10 +97,7 @@ def main() -> int:
             "min": f.get("min"),
             "max": f.get("max"),
             "result": result,
-            "detected": detected,
         }
-        if reaction_ms is not None:
-            entry["reaction_ms"] = reaction_ms
         if note is not None:
             entry["note"] = note
         faults_out.append(entry)
@@ -124,7 +110,8 @@ def main() -> int:
             "mode": meta.get("mode", "HARDWARE"),
             "target": meta.get("target", "ARM"),
             "asil_level": asil,
-            "micro": micro,
+            "machine": machine,
+            "cpu": cpu,
             "overhead_pct": round(random.Random(zlib.crc32(asil.encode())).uniform(2.0, 4.5), 1),
         },
         "faults": faults_out,

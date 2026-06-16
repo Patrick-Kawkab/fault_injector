@@ -136,9 +136,9 @@ Shows the streaming log, a progress bar, and live fault-handling counts (Safe /
 Unsafe) during a run.
 
 RESULTS TAB
-Shows metric cards (handling rate, total tests, average reaction time, overhead),
-a fault-handling-by-type chart, a reaction-time-distribution chart, and a per-test
-breakdown table (each injection: system response, reaction time, Pass/Fail outcome).
+Shows metric cards (handling rate, total tests, the ASIL recovery deadline,
+overhead), a fault-handling-by-type chart, and a per-test breakdown table
+(each injection: system response, Pass/Fail outcome).
 
 REPORT TAB
 Shows an ISO 26262 report: Executive Summary, Key Metrics, an ISO 26262
@@ -148,21 +148,23 @@ Buttons: "Export PDF" saves the report as a PDF file; "Copy" copies the text.
 KEY CONCEPTS
 - Test case / injection: one fault injection. The injector halts the target,
   writes the fault, resumes, and observes how the system responds.
-- PASS (handled / Safe): the system reached its expected safe state within the
-  FTTI - it overrode/rejected the faulty value (good). FAIL (Unsafe): the fault
-  propagated, or no safe-state transition occurred, or it happened too late.
+- PASS (handled / Safe): the system reached its safe state within the ASIL
+  recovery deadline - it overrode/rejected the faulty value (good).
+  FAIL (Unsafe): the fault propagated, or the safe state was reached late.
 - Fault-handling rate = handled (Pass) / total, as a percentage.
-- A FAIL is one of: (a) fault not detected -> propagated to output; (b) detected
-  but no safe-state transition; (c) safe state reached LATE (reaction > FTTI).
-- In the current mock build, the system's reaction is simulated (handles ~96%,
-  a few reactions land outside the FTTI). The real
+- The injector cannot measure an exact reaction time; it only compares the
+  recovery time to the ASIL deadline (sent as delay_ms) and reports PASS or FAIL.
+  Late is FAIL either way, so no reaction_ms or detected flag is sent.
+- In the current mock build the verdict is simulated (handles ~90%). The real
   injector observes the actual target behaviour.
 
 ISO 26262 PASS/FAIL (the verdict)
-A campaign PASSES only if ALL THREE deterministic criteria are met:
+A campaign PASSES only if BOTH deterministic criteria are met:
 1. Fault-handling rate >= the ASIL target:  A 60%, B 70%, C 80%, D 90%.
-2. Worst-case reaction time <= the ASIL FTTI:  A 50ms, B 30ms, C 20ms, D 10ms.
-3. Performance overhead <= 5%.
+2. Performance overhead <= 5%.
+The ASIL recovery deadline (A 50ms, B 30ms, C 20ms, D 10ms) is sent to the
+injector, which fails any injection that recovers late - so lateness shows up in
+the handling rate rather than as a separate criterion.
 The verdict is computed in code (ResultsManager), never by this assistant. If any
 single criterion fails, the whole campaign fails.
 """
@@ -183,8 +185,7 @@ def format_results_context(data: dict) -> str:
         f"ASIL: {g(cfg,'asil_level')} | Hardware: {g(cfg,'hardware')}",
         f"Total tests: {data.get('total')} | Handled (safe state): {data.get('handled')} | "
         f"Handling rate: {data.get('handling_pct')}%",
-        f"Avg reaction: {data.get('avg_reaction_ms')}ms | Max reaction: "
-        f"{data.get('max_reaction_ms')}ms (FTTI {data.get('ftti_ms')}ms) | "
+        f"ASIL deadline: {data.get('ftti_ms')}ms | "
         f"Overhead: {data.get('overhead_pct')}%",
         f"Verdict (passed_asil): {data.get('passed_asil')}",
     ]

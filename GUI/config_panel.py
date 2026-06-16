@@ -8,11 +8,12 @@ Emits a FaultConfig object upward when the user is ready to run.
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QComboBox, QSpinBox, QPushButton,
-    QScrollArea, QFrame, QSizePolicy, QStackedWidget
+    QScrollArea, QFrame, QSizePolicy, QStackedWidget,
+    QCheckBox, QListWidget, QListWidgetItem
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from config import FaultConfig, SENSOR_DB, FAULT_TYPES, ASIL_LEVELS, HARDWARE_MODES
+from config import FaultConfig, SENSOR_DB, FAULT_TYPES, ASIL_LEVELS, HARDWARE_MODES, GDB_PORTS, MACHINES, CPUS
 import styles
 from widgets import SectionLabel, FieldLabel, AITag, EmptyState, HDivider
 
@@ -31,6 +32,7 @@ class ConfigPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._fault_list = []          # varied-fault campaign: list of FaultConfig
         self.setFixedWidth(290)
         self.setStyleSheet(f"background: {styles.BG_SECONDARY};")
 
@@ -271,22 +273,54 @@ class ConfigPanel(QWidget):
         vl.addWidget(FieldLabel("ASIL level"))
         vl.addWidget(self._asil_combo)
 
+        # ── Target / debug section (goes into the JSON meta) ──
+        vl.addWidget(SectionLabel("Target / debug"))
+        self._machine_combo = self._make_combo(MACHINES)
+        self._cpu_combo     = self._make_combo(CPUS)
+        self._gdb_combo     = self._make_combo([str(p) for p in GDB_PORTS])
+        vl.addWidget(FieldLabel("Machine"))
+        vl.addWidget(self._machine_combo)
+        vl.addWidget(FieldLabel("CPU"))
+        vl.addWidget(self._cpu_combo)
+        vl.addWidget(FieldLabel("GDB port"))
+        vl.addWidget(self._gdb_combo)
+
         # ── Timing section ──
         vl.addWidget(SectionLabel("Timing"))
-
-        timing_row = QHBoxLayout()
-        timing_row.setSpacing(8)
         self._duration_spin = self._make_spin(1, 3600, 60, "s")
-        self._delay_spin    = self._make_spin(0, 60000, 0, "ms")
-        dur_col = QVBoxLayout()
-        dur_col.addWidget(FieldLabel("Duration"))
-        dur_col.addWidget(self._duration_spin)
-        del_col = QVBoxLayout()
-        del_col.addWidget(FieldLabel("Delay"))
-        del_col.addWidget(self._delay_spin)
-        timing_row.addLayout(dur_col)
-        timing_row.addLayout(del_col)
-        vl.addLayout(timing_row)
+        vl.addWidget(FieldLabel("Duration"))
+        vl.addWidget(self._duration_spin)
+
+        self._num_faults_spin = self._make_spin(1, 1000, 30)
+        vl.addWidget(FieldLabel("Number of faults"))
+        vl.addWidget(self._num_faults_spin)
+
+        # ── Vary faults: build a list of distinct faults, repeated to N ──
+        self._vary_check = QCheckBox("Vary faults (build a list)")
+        self._vary_check.toggled.connect(self._on_vary_toggled)
+        vl.addWidget(self._vary_check)
+
+        self._add_fault_btn = QPushButton("Add current fault to list")
+        self._add_fault_btn.clicked.connect(self._on_add_fault)
+        vl.addWidget(self._add_fault_btn)
+
+        self._fault_list_widget = QListWidget()
+        self._fault_list_widget.setMaximumHeight(120)
+        vl.addWidget(self._fault_list_widget)
+
+        list_btn_row = QHBoxLayout()
+        self._remove_fault_btn = QPushButton("Remove last")
+        self._clear_faults_btn = QPushButton("Clear")
+        self._remove_fault_btn.clicked.connect(self._on_remove_fault)
+        self._clear_faults_btn.clicked.connect(self._on_clear_faults)
+        list_btn_row.addWidget(self._remove_fault_btn)
+        list_btn_row.addWidget(self._clear_faults_btn)
+        vl.addLayout(list_btn_row)
+
+        self._vary_widgets = [self._add_fault_btn, self._fault_list_widget,
+                              self._remove_fault_btn, self._clear_faults_btn]
+        for _w in self._vary_widgets:
+            _w.setVisible(False)
 
         # ── Expected behavior ──
         vl.addWidget(SectionLabel("Expected behavior"))
@@ -468,6 +502,43 @@ class ConfigPanel(QWidget):
         self._check_run_ready()
 
     # ── Build FaultConfig from form ───────────────────────────────────────────
+    def _fault_summary(self, c) -> str:
+        loc = c.variable or c.address
+        label = FAULT_TYPES.get(c.fault_type, c.fault_type)
+        if c.fault_type in ("sensor_corruption", "memory_corruption"):
+            extra = f" = {c.fault_value}"
+        elif c.fault_type == "task_delay":
+            extra = f" delay {c.fault_value}ms"
+        elif c.fault_type == "bit_flip":
+            extra = f" bit {c.bit_position}"
+        else:
+            extra = ""
+        return f"{label} · {loc}{extra}"
+
+    def _on_vary_toggled(self, checked: bool):
+        for w in self._vary_widgets:
+            w.setVisible(checked)
+
+    def _on_add_fault(self):
+        cfg = self._build_config()
+        ok, err = cfg.is_valid()
+        if not ok:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Incomplete fault", err)
+            return
+        self._fault_list.append(cfg)
+        self._fault_list_widget.addItem(
+            QListWidgetItem(f"{len(self._fault_list)}.  {self._fault_summary(cfg)}"))
+
+    def _on_remove_fault(self):
+        if self._fault_list:
+            self._fault_list.pop()
+            self._fault_list_widget.takeItem(self._fault_list_widget.count() - 1)
+
+    def _on_clear_faults(self):
+        self._fault_list.clear()
+        self._fault_list_widget.clear()
+
     def _build_config(self) -> FaultConfig:
         hw_text   = self._hw_combo.currentText()
         hw_key    = "tivac" if "Tiva" in hw_text else "qemu"
@@ -485,12 +556,15 @@ class ConfigPanel(QWidget):
             address          = self._address_input.text().strip() if is_pc else "",
             system_state     = self._system_state_input.text().strip() if has_state else "",
             duration_s       = self._duration_spin.value(),
-            delay_ms         = self._delay_spin.value(),
             min_value        = self._min_spin.value(),
             max_value        = self._max_spin.value(),
             fault_value      = self._fault_val_spin.value(),
             bit_position     = self._bit_pos_spin.value(),
             asil_level       = self._asil_combo.currentText(),
+            machine          = self._machine_combo.currentText(),
+            cpu              = self._cpu_combo.currentText(),
+            gdb_port         = int(self._gdb_combo.currentText()),
+            num_faults       = self._num_faults_spin.value(),
             expected_behavior= self._expected_input.text().strip(),
         )
 
@@ -518,6 +592,16 @@ class ConfigPanel(QWidget):
             )
         else:
             cfg = self._build_config()
+            if self._vary_check.isChecked():
+                if not self._fault_list:
+                    from PyQt5.QtWidgets import QMessageBox
+                    QMessageBox.warning(self, "No faults in list",
+                        "Add at least one fault to the list, or uncheck 'Vary faults'.")
+                    return
+                # Distinct faults (each validated when added), repeated to N.
+                cfg.varied_faults = [c.fault_payload() for c in self._fault_list]
+                self.run_requested.emit(cfg)
+                return
 
         valid, err = cfg.is_valid()
         if not valid:
@@ -560,7 +644,9 @@ class ConfigPanel(QWidget):
             self._hw_combo, self._sensor_combo, self._fault_combo,
             self._variable_input, self._address_input, self._system_state_input, self._min_spin, self._max_spin,
             self._fault_val_spin, self._bit_pos_spin, self._asil_combo,
-            self._duration_spin, self._delay_spin, self._expected_input,
+            self._machine_combo, self._cpu_combo, self._gdb_combo, self._num_faults_spin,
+            self._vary_check, self._add_fault_btn, self._remove_fault_btn, self._clear_faults_btn,
+            self._duration_spin, self._expected_input,
         ]:
             widget.setEnabled(enabled)
 

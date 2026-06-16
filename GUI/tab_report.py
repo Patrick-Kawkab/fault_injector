@@ -67,7 +67,7 @@ def _generate_report_text(data: dict) -> dict:
         findings = [("ok",
             f"The {cfg.sensor} safety mechanism met all ISO 26262 {cfg.asil_level} acceptance "
             f"criteria: the system reached its safe state for {handled}/{total} injected faults "
-            f"({coverage}%), with a worst-case reaction time of {max_lat}ms (within the {ftti}ms FTTI) "
+            f"({coverage}%) within the {ftti}ms {cfg.asil_level} recovery deadline, "
             f"and {overhead}% runtime overhead — each within its target."
         )]
     else:
@@ -76,7 +76,7 @@ def _generate_report_text(data: dict) -> dict:
         findings = [("warn",
             f"The campaign did not meet all ISO 26262 {cfg.asil_level} acceptance criteria "
             f"(failing: {failed_txt}). The system mitigated {handled}/{total} injected faults "
-            f"({coverage}%), worst-case reaction {max_lat}ms (FTTI {ftti}ms), overhead {overhead}%. "
+            f"({coverage}%) within the {ftti}ms deadline, overhead {overhead}%. "
             f"The gap(s) must be addressed "
             f"before certification can proceed."
         )]
@@ -108,7 +108,7 @@ def _generate_report_text(data: dict) -> dict:
             (f"{coverage}%", "Handling rate",
              styles.ACCENT_GREEN if coverage >= 90 else styles.ACCENT_RED),
             (str(total),     "Tests run",      styles.ACCENT_BLUE),
-            (f"{avg_lat}ms", "Avg reaction",   styles.ACCENT_AMBER),
+            (f"{ftti}ms", "ASIL deadline",  styles.ACCENT_AMBER),
             (f"{overhead}%", "Overhead",       styles.ACCENT_GREEN),
         ]
     }

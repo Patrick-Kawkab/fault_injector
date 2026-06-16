@@ -119,7 +119,7 @@ class ResultsTab(QWidget):
         for label, value, sub, color in [
             ("Total tests",    str(total),       f"{cfg.sensor} campaign",            styles.ACCENT_BLUE),
             ("Handling rate",  f"{coverage}%",   f"{cfg.asil_level}: {'PASS ✓' if passed else 'FAIL ✗'}", cov_color),
-            ("Avg reaction",   f"{avg_lat}ms",   f"Max: {max_lat}ms (FTTI {ftti}ms)", styles.ACCENT_AMBER),
+            ("ASIL deadline",  f"{ftti}ms",      f"{cfg.asil_level} recovery limit", styles.ACCENT_AMBER),
             ("Overhead",       f"{overhead}%",   "Target: <5% " + ("✓" if overhead < 5 else "✗"), oh_color),
         ]:
             metrics_row.addWidget(MetricCard(label, value, sub, color))
@@ -254,9 +254,9 @@ class ResultsTab(QWidget):
                             alignment=Qt.AlignTop | Qt.AlignLeft)
 
         table = QTableWidget()
-        table.setColumnCount(7)
+        table.setColumnCount(6)
         table.setHorizontalHeaderLabels(
-            ["ID", "Fault type", "Variable", "Injected", "System response", "Reaction", "Outcome"]
+            ["ID", "Fault type", "Variable", "Injected", "System response", "Outcome"]
         )
         table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
@@ -288,17 +288,14 @@ class ResultsTab(QWidget):
             resp.setForeground(QColor(styles.TEXT_SECONDARY))
             table.setItem(row_idx, 4, resp)
 
-            react_text = f"{tc['reaction_ms']}ms" if tc.get("reaction_ms") else "—"
-            table.setItem(row_idx, 5, cell(react_text, Qt.AlignCenter))
-
             res = cell(tc["outcome"], Qt.AlignCenter)
             _oc = {"Pass": styles.ACCENT_GREEN, "Fail": styles.ACCENT_RED}.get(
                 tc["outcome"], styles.ACCENT_AMBER)
             res.setForeground(QColor(_oc))
-            table.setItem(row_idx, 6, res)
+            table.setItem(row_idx, 5, res)
 
             if tc["outcome"] == "Fail":
-                for col in range(7):
+                for col in range(6):
                     item = table.item(row_idx, col)
                     if item:
                         item.setBackground(QColor("#2a0f0f"))

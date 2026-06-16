@@ -9,10 +9,10 @@ The injector reports a functional ``result`` per fault:
     FAIL  — fault propagated (system did not mitigate)
     ERROR — injection could not be performed (excluded from pass/fail stats)
 
-The orchestrator applies the ASIL timing gate on top: a PASS whose
-``reaction_ms`` exceeds the FTTI is still a FAIL at the verdict (the hazard
-window opened). When the injector supplies no ``reaction_ms`` at all, the timing
-criterion is dropped and the verdict rests on the handling rate alone.
+The injector enforces the ASIL recovery deadline itself (a late recovery is
+reported as FAIL), so the orchestrator does not re-gate on timing. The verdict
+rests on the handling rate and the runtime overhead. No reaction_ms / detected
+are expected from the injector.
 
 New keys describe fault handling; legacy keys (detected, coverage_pct,
 avg_latency_ms, ...) are kept as aliases so older code paths still work.
@@ -51,13 +51,10 @@ class ResultsManager:
             reason = note or "Injection could not be performed"
             response = note or "Injection error — fault not applied"
         elif res == "PASS":
-            in_time = react is None or react <= self._ftti
+            # The injector already enforced the ASIL deadline (late -> FAIL),
+            # so a reported PASS is a pass.
+            outcome, reason = "Pass", ""
             response = note or expected
-            if in_time:
-                outcome, reason = "Pass", ""
-            else:
-                outcome = "Fail"
-                reason = f"Safe state reached LATE ({react}ms > {self._ftti}ms FTTI)"
         else:  # FAIL or anything unexpected
             outcome = "Fail"
             reason = note or "Fault propagated — system did not reach safe state"
@@ -149,7 +146,7 @@ class ResultsManager:
             "avg_reaction_ms": avg,
             "max_reaction_ms": max_r,
             "min_reaction_ms": min_r,
-            "ftti_ms": ftti if has_timing else "n/a",
+            "ftti_ms": ftti,  # ASIL deadline (ms) sent to the injector
             # ── legacy aliases (kept so existing tabs keep rendering) ──
             "detected": self.handled,
             "coverage_pct": handling,

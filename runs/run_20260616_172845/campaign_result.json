@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "firmware": "tiva_led.elf",
+    "mode": "HARDWARE",
+    "target": "ARM",
+    "asil_level": "ASIL-D",
+    "micro": "tiva",
+    "overhead_pct": 3.4
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.8
+    },
+    {
+      "id": 2,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.9
+    },
+    {
+      "id": 3,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 4.9
+    },
+    {
+      "id": 4,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 11.3
+    },
+    {
+      "id": 5,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.5
+    },
+    {
+      "id": 6,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.9
+    },
+    {
+      "id": 7,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 1.7
+    },
+    {
+      "id": 8,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "FAIL",
+      "detected": true,
+      "note": "Fault detected but controller held last command \u2014 no safe-state transition"
+    },
+    {
+      "id": 9,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.5
+    },
+    {
+      "id": 10,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.0
+    },
+    {
+      "id": 11,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.2
+    },
+    {
+      "id": 12,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 8.1
+    },
+    {
+      "id": 13,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 15.5
+    },
+    {
+      "id": 14,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 11.9
+    },
+    {
+      "id": 15,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.3
+    },
+    {
+      "id": 16,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 1.7
+    },
+    {
+      "id": 17,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.2
+    },
+    {
+      "id": 18,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.9
+    },
+    {
+      "id": 19,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.2
+    },
+    {
+      "id": 20,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.7
+    },
+    {
+      "id": 21,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.1
+    },
+    {
+      "id": 22,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.1
+    },
+    {
+      "id": 23,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.0
+    },
+    {
+      "id": 24,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.6
+    },
+    {
+      "id": 25,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 4.0
+    },
+    {
+      "id": 26,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.3
+    },
+    {
+      "id": 27,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.2
+    },
+    {
+      "id": 28,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 7.4
+    },
+    {
+      "id": 29,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.2
+    },
+    {
+      "id": 30,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": -5,
+      "min": 0,
+      "max": 252,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.1
+    }
+  ]
+}

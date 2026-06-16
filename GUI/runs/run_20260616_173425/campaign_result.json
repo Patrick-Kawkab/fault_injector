@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "firmware": "tiva_led.elf",
+    "mode": "EMULATION",
+    "target": "ARM",
+    "asil_level": "ASIL-D",
+    "micro": "qemu",
+    "overhead_pct": 3.4
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.6
+    },
+    {
+      "id": 2,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.8
+    },
+    {
+      "id": 3,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 10.3
+    },
+    {
+      "id": 4,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "FAIL",
+      "detected": false,
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+    },
+    {
+      "id": 5,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.1
+    },
+    {
+      "id": 6,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.2
+    },
+    {
+      "id": 7,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 7.3
+    },
+    {
+      "id": 8,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 4.3
+    },
+    {
+      "id": 9,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 7.2
+    },
+    {
+      "id": 10,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "FAIL",
+      "detected": false,
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+    },
+    {
+      "id": 11,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.3
+    },
+    {
+      "id": 12,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.0
+    },
+    {
+      "id": 13,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.1
+    },
+    {
+      "id": 14,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 10.0
+    },
+    {
+      "id": 15,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 1.9
+    },
+    {
+      "id": 16,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.4
+    },
+    {
+      "id": 17,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.9
+    },
+    {
+      "id": 18,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.6
+    },
+    {
+      "id": 19,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.4
+    },
+    {
+      "id": 20,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.7
+    },
+    {
+      "id": 21,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 2.2
+    },
+    {
+      "id": 22,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 15.2
+    },
+    {
+      "id": 23,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 6.1
+    },
+    {
+      "id": 24,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 7.6
+    },
+    {
+      "id": 25,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 10.6
+    },
+    {
+      "id": 26,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 13.5
+    },
+    {
+      "id": 27,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.6
+    },
+    {
+      "id": 28,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 5.4
+    },
+    {
+      "id": 29,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 3.3
+    },
+    {
+      "id": 30,
+      "fault_type": "memory_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS",
+      "detected": true,
+      "reaction_ms": 15.2
+    }
+  ]
+}

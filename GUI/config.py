@@ -6,7 +6,8 @@ This is the contract between the GUI and the orchestrator.
 Neither side should modify field names without telling the other.
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from typing import List, Optional
 import json
 
 
@@ -14,21 +15,26 @@ import json
 class FaultConfig:
     hardware: str = "tivac"          # "tivac" or "qemu"
     firmware: str = "tiva_led.elf"   # ELF image running on the target
+    machine: str = "lm3s6965evb"     # QEMU machine / target board (meta)
+    cpu: str = "cortex-m4"           # CPU core, e.g. cortex-m4 / cortex-m3 (meta)
+    gdb_port: int = 3333             # port the injector dials to reach the debug stack (meta gdb)
     sensor: str = ""                  # "WSS", "TPS", "MAP", "ECT"
     fault_type: str = ""              # see FAULT_TYPES: sensor_corruption, memory_corruption, bit_flip, pc_error, task_delay
     variable: str = ""                # variable to inject into, e.g. "speed_RPM" (empty for pc_error)
     address: str = ""                 # hex address, e.g. "0x00000400" (pc_error only; empty otherwise)
     system_state: str = ""            # variable to monitor for safety (sensor_corruption / task_delay only)
     duration_s: int = 60              # seconds (campaign-level, informational)
+    num_faults: int = 30              # number of injections in the campaign
     duration_ms: int = 3500           # hold the fault this long per injection (ms)
     interval_ms: int = 50             # re-inject the fault every this many ms
-    delay_ms: int = 0                 # ms before injection starts
+    delay_ms: int = 0                 # ASIL recovery deadline (ms); set from asil_level at serialization
     min_value: int = 0                # sensor min
     max_value: int = 255              # sensor max
     fault_value: int = 0              # value to inject (corruption); delay magnitude (ms) for task_delay
     bit_position: int = 0             # bit to flip (for bit_flip mode)
     asil_level: str = "ASIL-D"       # "ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D"
     expected_behavior: str = ""       # human description of expected system response
+    varied_faults: Optional[List[dict]] = field(default=None)  # list of fault_payload() dicts; repeated to num_faults
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2)
@@ -37,45 +43,52 @@ class FaultConfig:
         with open(path, "w") as f:
             f.write(self.to_json())
 
-    def _micro(self) -> str:
-        return "tiva" if self.hardware == "tivac" else "qemu"
-
     def _mode(self) -> str:
         return "HARDWARE" if self.hardware == "tivac" else "EMULATION"
 
-    def to_injector_input(self, count: int = 1, gdb: str = "") -> dict:
+    def to_injector_input(self, count: int = None) -> dict:
         """Build the ``{meta, faults[]}`` contract the injector reads.
 
-        See INJECTOR_INTERFACE_CONTRACT.md. ``count`` identical injections are
-        emitted (id 1..count); a real deterministic injector may instead receive
-        a varied sweep later, but the shape is the same.
+        See INJECTOR_INTERFACE_CONTRACT.md. ``count`` (default: ``num_faults``)
+        identical injections are emitted (id 1..count).
         """
+        if count is None:
+            count = self.num_faults
         meta = {
             "firmware": self.firmware,
             "mode": self._mode(),
             "target": "ARM",
             "asil_level": self.asil_level,
-            "micro": self._micro(),
-            "gdb": gdb,
+            "machine": self.machine,
+            "cpu": self.cpu,
+            "gdb": f"localhost:{self.gdb_port}",
         }
+        # delay_ms carries the ASIL-specific recovery deadline the injector
+        # compares against (late recovery -> FAIL). Same for every fault in the
+        # campaign. This is NOT the task_delay magnitude (that lives in value).
+        deadline = ASIL_FTTI_MS.get(self.asil_level, 0)
+        defs = self.varied_faults if self.varied_faults else [self.fault_payload()]
         faults = [
-            {
-                "id": i,
-                "fault_type": self.fault_type,
-                "variable": self.variable,
-                "address": self.address,
-                "system_state": self.system_state,
-                "value": self.fault_value,
-                "min": self.min_value,
-                "max": self.max_value,
-                "duration_ms": self.duration_ms,
-                "interval_ms": self.interval_ms,
-                "delay_ms": self.delay_ms,
-                "bit_position": self.bit_position,
-            }
+            {"id": i, **defs[(i - 1) % len(defs)], "delay_ms": deadline}
             for i in range(1, count + 1)
         ]
         return {"meta": meta, "faults": faults}
+
+    def fault_payload(self) -> dict:
+        """The per-fault dict (without id), in contract field order."""
+        return {
+            "fault_type": self.fault_type,
+            "variable": self.variable,
+            "address": self.address,
+            "system_state": self.system_state,
+            "value": self.fault_value,
+            "min": self.min_value,
+            "max": self.max_value,
+            "duration_ms": self.duration_ms,
+            "interval_ms": self.interval_ms,
+            "delay_ms": self.delay_ms,
+            "bit_position": self.bit_position,
+        }
 
     @staticmethod
     def from_json(data: str) -> "FaultConfig":
@@ -149,6 +162,10 @@ SENSOR_DB = {
     },
 }
 
+GDB_PORTS = [3333, 4444, 1234, 9001]
+MACHINES  = ["lm3s6965evb"]
+CPUS      = ["cortex-m4", "cortex-m3"]
+
 FAULT_TYPES = {
     "sensor_corruption": "Sensor Corruption",
     "memory_corruption": "Memory Corruption",
@@ -165,8 +182,8 @@ ASIL_LEVELS = ["ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D"]
 ASIL_COVERAGE = {"ASIL-A": 60, "ASIL-B": 70, "ASIL-C": 80, "ASIL-D": 90}
 
 # Fault-Tolerant Time Interval (FTTI) per ASIL, in ms — the maximum time the system may
-# take to reach the safe state after the fault is injected. A correct-but-slow reaction
-# (reaction_ms > FTTI) is still counted as a FAILURE, because the hazard window opened.
+# take to recover. This value is sent to the injector as delay_ms; the injector FAILs any
+# injection that recovers later than this, so a late recovery counts as a failure.
 ASIL_FTTI_MS = {"ASIL-A": 50, "ASIL-B": 30, "ASIL-C": 20, "ASIL-D": 10}
 # Backwards-compatible alias (older modules referenced this name).
 ASIL_MAX_LATENCY_MS = ASIL_FTTI_MS

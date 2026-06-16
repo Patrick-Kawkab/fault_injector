@@ -16,7 +16,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 import json
 import styles
 from widgets import MetricCard, CardFrame, CardTitle, EmptyState
-from config import FaultConfig, FAULT_TYPES, HARDWARE_MODES
+from config import FaultConfig, FAULT_TYPES, HARDWARE_MODES, ASIL_FTTI_MS
 
 
 # ── Smart chart: gauge for 1 fault type, radar for 2+ ───────────────────────
@@ -343,7 +343,8 @@ class MonitorTab(QWidget):
         self._m_tests    = MetricCard("Tests run",   "0", "This campaign",  styles.ACCENT_BLUE)
         self._m_detected = MetricCard("Handled",     "0", "of 0 faults",    styles.ACCENT_GREEN)
         self._m_coverage = MetricCard("Handling rate","—", "ASIL-D: ≥90%",  styles.TEXT_SECONDARY)
-        self._m_latency  = MetricCard("Avg reaction","—", "—",              styles.ACCENT_AMBER)
+        _deadline = ASIL_FTTI_MS.get(config.asil_level, 10)
+        self._m_latency  = MetricCard("ASIL deadline", f"{_deadline}ms", config.asil_level, styles.ACCENT_AMBER)
         for m in [self._m_tests, self._m_detected, self._m_coverage, self._m_latency]:
             metrics_row.addWidget(m)
         self._root.addLayout(metrics_row)

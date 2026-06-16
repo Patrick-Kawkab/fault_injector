@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "firmware": "tiva_led.elf",
+    "mode": "HARDWARE",
+    "target": "ARM",
+    "asil_level": "ASIL-B",
+    "machine": "lm3s6965evb",
+    "cpu": "cortex-m4",
+    "gdb": "localhost:3333"
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "address": "",
+      "system_state": "cruise_active",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 30,
+      "bit_position": 0
+    },
+    {
+      "id": 2,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "address": "",
+      "system_state": "cruise_active",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 30,
+      "bit_position": 0
+    },
+    {
+      "id": 3,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "address": "",
+      "system_state": "cruise_active",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 30,
+      "bit_position": 0
+    },
+    {
+      "id": 4,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "address": "",
+      "system_state": "cruise_active",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 30,
+      "bit_position": 0
+    },
+    {
+      "id": 5,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "address": "",
+      "system_state": "cruise_active",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 30,
+      "bit_position": 0
+    }
+  ]
+}
