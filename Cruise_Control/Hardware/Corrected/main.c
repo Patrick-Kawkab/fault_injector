@@ -33,6 +33,15 @@ void vManualTask(void *pvParameters);                      // Handles buttons an
 void vWatchdogTask(void *pvParameters);                    // Monitors task health
 void vLCDTask(void *pvParameters);                         // Periodically updates LCD
 
+typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Cruise control mode
+
+void FailSafe_Shutdown(void);
+uint32_t sanitize_target_rpm(uint32_t rpm);
+uint32_t sanitize_measured_rpm(uint32_t rpm);
+CruiseState sanitize_cruise_state(CruiseState state);
+uint32_t sanitize_duty(uint32_t duty);
+uint32_t sanitize_sample_period(uint32_t period);
+
 // ============================================================
 // Constants
 // ============================================================
@@ -43,7 +52,7 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 
 #define SPEED_MIN               0      // Minimum target RPM allowed
 #define SPEED_MAX               300    // Maximum target RPM allowed
-#define SPEED_STEP              10     // Button increment/decrement for target RPM
+#define SPEED_STEP              5      // Button increment/decrement for target RPM
 
 #define ENCODER_PPR             11     // Encoder pulses per revolution
 #define SAMPLE_PERIOD_MS        100    // Encoder sampling period in ms
@@ -51,9 +60,8 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 #define ZERO_RPM_LIMIT          30     // 30 * 100ms = about 3 seconds before auto-cancel
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
+#define MAX_VALID_RPM           500
 
-#define WHEEL_DIAMETER_M        0.065f //Wheel diameter is 6.5 cm
-#define WHEEL_CIRCUMFERENCE     (3.14159f * WHEEL_DIAMETER_M)
 // ============================================================
 // LCD pin definitions
 // Note: PC4=RS, PC5=E, PC6=D4, PC7=D5, PB4=D6, PB5=D7
@@ -70,7 +78,6 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 // These are visible to multiple tasks, so access is protected
 // by mutexes where appropriate.
 // ============================================================
-typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Cruise control mode
 
 volatile CruiseState cruise_state      = STATE_OFF; // Current cruise mode: OFF or ACTIVE
 volatile uint32_t    target_rpm        = 100;       // Desired speed when cruise is active
@@ -80,6 +87,9 @@ volatile uint32_t    zero_rpm_count    = 0;         // Counts consecutive zero-R
 volatile uint32_t    encoder_task_kick = 0;         // Heartbeat counter for encoder task
 volatile uint32_t    cruise_task_kick  = 0;         // Heartbeat counter for cruise task
 volatile uint32_t    manual_task_kick  = 0;         // Heartbeat counter for manual task
+volatile uint32_t    sample_period     = SAMPLE_PERIOD_MS;
+volatile uint32_t    max_duty          = THROTTLE_ON;
+volatile uint32_t    min_duty          = THROTTLE_OFF;
 
 SemaphoreHandle_t xRPMMutex;                        // Protects current_rpm
 SemaphoreHandle_t xStateMutex;                      // Protects cruise_state / target_rpm / zero_rpm_count
@@ -93,6 +103,54 @@ SemaphoreHandle_t xStateMutex;                      // Protects cruise_state / t
 void delay_ms(uint32_t ms) {
     volatile uint32_t count = ms * (80000000 / 3000); // Rough loop count for ~ms delay at 80MHz
     while (count--);                                   // Burn CPU cycles until count reaches zero
+}
+
+void FailSafe_Shutdown(void) {
+    if (xStateMutex != NULL) {
+        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+            cruise_state = STATE_OFF;
+            zero_rpm_count = 0;
+            target_rpm = sanitize_target_rpm(target_rpm);
+            xSemaphoreGive(xStateMutex);
+        }
+    }
+    PWM_SetDuty(THROTTLE_OFF);
+    led_set(1, 0, 0);
+}
+
+uint32_t sanitize_target_rpm(uint32_t rpm) {
+    if (rpm > SPEED_MAX) {
+        return SPEED_MAX;
+    }
+    return rpm;
+}
+
+uint32_t sanitize_measured_rpm(uint32_t rpm) {
+    if (rpm > MAX_VALID_RPM) {
+        return current_rpm;
+    }
+    return rpm;
+}
+
+CruiseState sanitize_cruise_state(CruiseState state) {
+    if ((state != STATE_OFF) && (state != STATE_ACTIVE)) {
+        return STATE_OFF;
+    }
+    return state;
+}
+
+uint32_t sanitize_duty(uint32_t duty) {
+    if (duty > 100) {
+        return THROTTLE_OFF;
+    }
+    return duty;
+}
+
+uint32_t sanitize_sample_period(uint32_t period) {
+    if (period < 10 || period > 1000) {
+        return SAMPLE_PERIOD_MS;
+    }
+    return period;
 }
 
 // ============================================================
@@ -366,7 +424,9 @@ void GPIOPortD_Handler(void) {
 void vEncoderTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount(); // Save current tick so vTaskDelayUntil is periodic
     while (1) {
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(SAMPLE_PERIOD_MS)); // Wait until next 100ms boundary
+
+        uint32_t period = sanitize_sample_period(sample_period);
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(period));
         encoder_task_kick++;                        // Heartbeat for software watchdog
 
         uint32_t count;
@@ -375,9 +435,10 @@ void vEncoderTask(void *pvParameters) {
         encoder_count = 0;                          // Reset counter for next sample window
         taskEXIT_CRITICAL();                        // Re-enable interrupts / leave critical section
 
-        uint32_t rpm = (count * 60000UL) / (ENCODER_PPR * SAMPLE_PERIOD_MS); // pulses/100ms -> pulses/min -> revolutions/min
+        uint32_t rpm = (count * 60000UL) / ((uint32_t)ENCODER_PPR * period); // pulses/100ms -> pulses/min -> revolutions/min
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Lock RPM shared variable
+            rpm = sanitize_measured_rpm(rpm);
             current_rpm = rpm;                      // Publish new measured RPM
             xSemaphoreGive(xRPMMutex);              // Unlock RPM mutex
         }
@@ -388,7 +449,7 @@ void vEncoderTask(void *pvParameters) {
                 if (zero_rpm_count >= ZERO_RPM_LIMIT) { // If zero RPM persisted for about 3 seconds
                     cruise_state = STATE_OFF;       // Cancel cruise control
                     zero_rpm_count = 0;             // Reset fault counter
-                    PWM_SetDuty(THROTTLE_OFF);      // Remove motor command
+                    PWM_SetDuty(sanitize_duty(min_duty));          // Remove motor command
                     led_set(1, 0, 0);               // Red LED indicates OFF/fault state
                 }
             } else {
@@ -416,27 +477,30 @@ void vCruiseTask(void *pvParameters) {
         uint32_t target;
 
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read shared state safely
-            state  = cruise_state;                  // Snapshot current cruise mode
-            target = target_rpm;                    // Snapshot current target speed
+        state  = sanitize_cruise_state(cruise_state);
+        target = sanitize_target_rpm(target_rpm);
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else {
             continue;                               // Skip this cycle if mutex unavailable
         }
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read shared RPM safely
-            rpm = current_rpm;                      // Snapshot measured RPM
+            rpm = sanitize_measured_rpm(current_rpm);                      // Snapshot measured RPM
             xSemaphoreGive(xRPMMutex);              // Release RPM mutex
         } else {
             continue;                               // Skip this cycle if mutex unavailable
         }
 
-        if (state == STATE_ACTIVE) {               // Only control motor automatically when cruise is active
-            if (rpm < (target - DEADBAND)) {       // Vehicle slower than desired speed window
-                PWM_SetDuty(THROTTLE_ON);           // Apply throttle / power to motor driver
-                led_set(0, 0, 1);                  // Blue LED = accelerating / adding throttle
-            } else if (rpm > (target + DEADBAND)) {// Vehicle faster than desired speed window
-                PWM_SetDuty(THROTTLE_OFF);          // Cut throttle
-                led_set(0, 1, 0);                  // Green LED = above target / backing off
+        if (state == STATE_ACTIVE) {
+            uint32_t lower = (target > DEADBAND) ? (target - DEADBAND) : 0;
+            uint32_t upper = target + DEADBAND;
+
+            if (rpm < lower) {
+                PWM_SetDuty(sanitize_duty(max_duty));
+                led_set(0, 0, 1);
+            } else if (rpm > upper) {
+                PWM_SetDuty(sanitize_duty(min_duty));
+                led_set(0, 1, 0);
             }
         }
     }
@@ -460,7 +524,7 @@ void vManualTask(void *pvParameters) {
 
         CruiseState state;
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read current cruise state safely
-            state = cruise_state;                   // Snapshot whether cruise is ON or OFF
+            state = sanitize_cruise_state(cruise_state);               // Snapshot whether cruise is ON or OFF
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else {
             continue;                               // Skip cycle if mutex busy
@@ -509,7 +573,7 @@ void vManualTask(void *pvParameters) {
                 zero_rpm_count = 0;                  // Clear zero-RPM fault counter
                 xSemaphoreGive(xStateMutex);         // Release mutex
             }
-            PWM_SetDuty(THROTTLE_OFF);               // Remove motor throttle immediately
+            PWM_SetDuty(sanitize_duty(min_duty));    // Remove motor throttle immediately
             led_set(1, 0, 0);                        // Red LED = off/cancelled
             uint32_t t = 0;                          // Release timeout counter
             while (!(GPIO_PORTF_DATA_R & (1 << 0)) && t++ < BUTTON_RELEASE_TIMEOUT) { // Wait for release or timeout
@@ -552,7 +616,7 @@ void vWatchdogTask(void *pvParameters) {
                 zero_rpm_count = 0;               // Clear zero-RPM fault counter
                 xSemaphoreGive(xStateMutex);      // Release mutex
             }
-            PWM_SetDuty(THROTTLE_OFF);            // Remove motor command as fail-safe
+            PWM_SetDuty(sanitize_duty(min_duty));                // Remove motor command as fail-safe
             led_set(1, 0, 0);                     // Red LED indicates fail-safe/off
             stall_encoder = stall_cruise = stall_manual = 0; // Reset counters after action
         }
@@ -579,25 +643,24 @@ void vLCDTask(void *pvParameters) {
         CruiseState state;
         
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
-            rpm = current_rpm;
+            rpm = sanitize_measured_rpm(current_rpm);
             xSemaphoreGive(xRPMMutex);
         } else {
             continue;
         }
 
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Read shared state safely
-            target = target_rpm;                    // Snapshot target RPM
-            state  = cruise_state;                  // Snapshot cruise state
+        target = sanitize_target_rpm(target_rpm);
+        state  = sanitize_cruise_state(cruise_state);
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else {
             continue;                               // Skip update if mutex unavailable
         }
-        uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
 
         LCD_SetCursor(0, 7);                        // Move cursor after " Speed:"
-        uint32_to_str(kph, num_buf, 4);             // Format RPM into 4-character field
+        uint32_to_str(rpm, num_buf, 4);             // Format RPM into 4-character field
         LCD_String(num_buf);                        // Print current RPM
-        LCD_String(" KPH");                         // Print unit label
+        LCD_String(" RPM");                         // Print unit label
 
         LCD_SetCursor(1, 7);                        // Move cursor after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM into 4-character field
