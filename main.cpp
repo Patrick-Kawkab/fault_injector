@@ -316,7 +316,7 @@ int main(){
         std::cout << "[INFO] Campaign result written to campaign_result.json\n";
     }
     if (mode == "HARDWARE" && fault_type == "pc_corruption") {
-        HardwareSession hardware(host, port);
+        HardwareSession hardware;
         hardware.start();
 
         uint32_t cruiseStateAddr = 0;
