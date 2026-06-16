@@ -91,7 +91,7 @@ std::string HardwareSession::recvResponse() {
     return out;
 }
 bool HardwareSession::memoryCorruptionTest(uint32_t addr, uint8_t injectedValue,
-                                           uint8_t minExpected, uint8_t maxExpected)
+                                           uint8_t minExpected, uint8_t maxExpected,uint8_t delay_ms)
 {
     char cmd[128];
     
@@ -137,18 +137,317 @@ bool HardwareSession::memoryCorruptionTest(uint32_t addr, uint8_t injectedValue,
     sendCmd("resume");
     return passed;
 }
-int HardwareSession::setPC(uint32_t pc) {          // uint32_t, not uint16_t
-    char cmd[64];
-    snprintf(cmd, sizeof(cmd), "reg pc 0x%08X", pc);
+bool HardwareSession::sensorCorruptionTest(uint32_t encoderCountAddr,uint32_t cruiseStateAddr,uint32_t durationMs,uint32_t intervalMs)
+{
+    char cmd[128];
 
-    if (!sendCmd("halt"))     return -1;
+    // ── PRE-CHECK: cruise must be STATE_ACTIVE ──────────────────────
+    sendCmd("halt");
     recvResponse();
 
-    if (!sendCmd(cmd))        return -1;
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string preResp = recvResponse();
+
+    sendCmd("resume");
     recvResponse();
 
-    if (!sendCmd("resume"))   return -1;
-    recvResponse();            // consume resume response
+    std::regex wordReg("0x[0-9a-fA-F]+[:\\s]+([0-9a-fA-F]{8})");
+    std::smatch m;
+    if (!std::regex_search(preResp, m, wordReg)) {
+        std::cerr << "[sensorCorruptionTest] Failed to parse cruise_state: "
+                  << preResp << "\n";
+        return false;
+    }
 
-    return 0;
+    uint32_t cruiseStatePre = std::stoul(m[1], nullptr, 16);
+    if (cruiseStatePre != 1) {   // STATE_ACTIVE == 1
+        std::cerr << "[sensorCorruptionTest] Cruise not active (cruise_state="
+                  << cruiseStatePre << "), aborting.\n";
+        return false;
+    }
+
+    // ── INJECTION LOOP ──────────────────────────────────────────────
+    auto deadline = std::chrono::steady_clock::now()
+                    + std::chrono::milliseconds(durationMs);
+
+    while (std::chrono::steady_clock::now() < deadline) {
+        sendCmd("halt");
+        recvResponse();
+
+        // encoder_count is uint32_t → use mww
+        snprintf(cmd, sizeof(cmd), "mww 0x%08X 0x00000000", encoderCountAddr);
+        sendCmd(cmd);
+        recvResponse();
+
+        sendCmd("resume");
+        recvResponse();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+    }
+
+    // ── POST-CHECK: cruise must now be STATE_OFF ────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string postResp = recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    if (!std::regex_search(postResp, m, wordReg)) {
+        std::cerr << "[sensorCorruptionTest] Failed to parse post cruise_state: "
+                  << postResp << "\n";
+        return false;
+    }
+
+    uint32_t cruiseStatePost = std::stoul(m[1], nullptr, 16);
+    bool passed = (cruiseStatePost == 0);   // STATE_OFF == 0
+
+    if (!passed)
+        std::cerr << "[sensorCorruptionTest] Cruise still active after injection "
+                     "(cruise_state=" << cruiseStatePost << ")\n";
+
+    return passed;
+}
+bool HardwareSession::taskDelayTest(uint32_t samplePeriodAddr,uint32_t cruiseStateAddr,uint32_t corruptedValue,uint32_t duration_ms,uint32_t interval_ms)
+{
+    char cmd[128];
+    std::regex wordReg("0x[0-9a-fA-F]+[:\\s]+([0-9a-fA-F]{8})");
+    std::smatch m;
+
+    // ── PRE-CHECK: cruise must be STATE_ACTIVE ──────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string preResp = recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    if (!std::regex_search(preResp, m, wordReg)) {
+        std::cerr << "[taskDelayTest] Failed to parse cruise_state: "
+                  << preResp << "\n";
+        return false;
+    }
+
+    uint32_t cruiseStatePre = std::stoul(m[1], nullptr, 16);
+    if (cruiseStatePre != 1) {
+        std::cerr << "[taskDelayTest] Cruise not active (cruise_state="
+                  << cruiseStatePre << "), aborting.\n";
+        return false;
+    }
+
+    // ── INJECTION LOOP ──────────────────────────────────────────────
+    auto deadline = std::chrono::steady_clock::now()
+                    + std::chrono::milliseconds(duration_ms);
+
+    while (std::chrono::steady_clock::now() < deadline) {
+        sendCmd("halt");
+        recvResponse();
+
+        // encoder_sample_period is uint32_t → mww
+        snprintf(cmd, sizeof(cmd), "mww 0x%08X 0x%08X",
+                 samplePeriodAddr, corruptedValue);
+        sendCmd(cmd);
+        recvResponse();
+
+        sendCmd("resume");
+        recvResponse();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms));
+    }
+
+    // ── POST-CHECK: cruise must now be STATE_OFF ────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string postResp = recvResponse();
+
+    // ── RESTORE: write original value back ─────────────────────────
+    snprintf(cmd, sizeof(cmd), "mww 0x%08X 0x%08X",
+             samplePeriodAddr, 100);          // SAMPLE_PERIOD_MS = 100
+    sendCmd(cmd);
+    recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    if (!std::regex_search(postResp, m, wordReg)) {
+        std::cerr << "[taskDelayTest] Failed to parse post cruise_state: "
+                  << postResp << "\n";
+        return false;
+    }
+
+    uint32_t cruiseStatePost = std::stoul(m[1], nullptr, 16);
+    bool passed = (cruiseStatePost == 0);   // STATE_OFF == 0
+
+    if (!passed)
+        std::cerr << "[taskDelayTest] Cruise still active after delay injection "
+                     "(cruise_state=" << cruiseStatePost << ")\n";
+
+    return passed;
+}
+bool HardwareSession::bitFlip(uint32_t addr, uint8_t bit_position,
+                               uint8_t minExpected, uint8_t maxExpected,
+                               uint8_t delay_ms)
+{
+    char cmd[128];
+
+    // ── HALT ────────────────────────────────────────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    // ── READ CURRENT VALUE ──────────────────────────────────────────
+    snprintf(cmd, sizeof(cmd), "mdb 0x%08X", addr);
+    sendCmd(cmd);
+    std::string readResp = recvResponse();
+
+    std::regex r("0x[0-9a-fA-F]+[:\\s]+([0-9a-fA-F]{2})");
+    std::smatch m;
+
+    if (!std::regex_search(readResp, m, r)) {
+        std::cerr << "[bitFlip] Failed to parse current value: "
+                  << readResp << "\n";
+        sendCmd("resume");
+        recvResponse();
+        return false;
+    }
+
+    uint8_t currentVal = static_cast<uint8_t>(std::stoul(m[1], nullptr, 16));
+    std::cout << "[bitFlip] Current value: 0x" << std::hex
+              << (int)currentVal << std::dec << "\n";
+
+    // ── FLIP THE BIT ────────────────────────────────────────────────
+    uint8_t flippedVal = currentVal ^ (1 << bit_position);
+    std::cout << "[bitFlip] Flipped value: 0x" << std::hex
+              << (int)flippedVal << std::dec
+              << " (bit " << (int)bit_position << " flipped)\n";
+
+    // ── WRITE FLIPPED VALUE ─────────────────────────────────────────
+    snprintf(cmd, sizeof(cmd), "mwb 0x%08X 0x%02X", addr, flippedVal);
+    sendCmd(cmd);
+    recvResponse();
+
+    // ── RESUME ──────────────────────────────────────────────────────
+    sendCmd("resume");
+    recvResponse();
+
+    // ── WAIT FOR FIRMWARE TO REACT ──────────────────────────────────
+    std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+
+    // ── HALT AGAIN ──────────────────────────────────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    // ── READ BACK ───────────────────────────────────────────────────
+    snprintf(cmd, sizeof(cmd), "mdb 0x%08X", addr);
+    sendCmd(cmd);
+    std::string postResp = recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    if (!std::regex_search(postResp, m, r)) {
+        std::cerr << "[bitFlip] Failed to parse post value: "
+                  << postResp << "\n";
+        return false;
+    }
+
+    uint8_t readVal = static_cast<uint8_t>(std::stoul(m[1], nullptr, 16));
+    std::cout << "[bitFlip] Read back value: 0x" << std::hex
+              << (int)readVal << std::dec << "\n";
+
+    // ── EVALUATE ────────────────────────────────────────────────────
+    bool passed = (readVal >= minExpected && readVal <= maxExpected);
+
+    if (!passed)
+        std::cerr << "[bitFlip] Value 0x" << std::hex << (int)readVal
+                  << " out of range [0x" << (int)minExpected
+                  << ", 0x" << (int)maxExpected << "]\n";
+
+    return passed;
+}
+bool HardwareSession::pcCorruptionTest(uint32_t badPC, uint32_t cruiseStateAddr, uint32_t wait_ms)
+{
+    char cmd[128];
+    std::regex wordReg("0x[0-9a-fA-F]+[:\\s]+([0-9a-fA-F]{8})");
+    std::smatch m;
+
+    // ── PRE-CHECK: cruise must be STATE_ACTIVE ──────────────────────
+    sendCmd("halt");
+    recvResponse();
+
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string preResp = recvResponse();
+
+    if (!std::regex_search(preResp, m, wordReg)) {
+        std::cerr << "[pcCorruptionTest] Failed to parse cruise_state: "
+                  << preResp << "\n";
+        sendCmd("resume");
+        recvResponse();
+        return false;
+    }
+
+    uint32_t cruiseStatePre = std::stoul(m[1], nullptr, 16);
+    if (cruiseStatePre != 1) {
+        std::cerr << "[pcCorruptionTest] Cruise not active (cruise_state="
+                  << cruiseStatePre << "), aborting.\n";
+        sendCmd("resume");
+        recvResponse();
+        return false;
+    }
+
+    // ── CORRUPT PC ──────────────────────────────────────────────────
+    snprintf(cmd, sizeof(cmd), "reg pc 0x%08X", badPC);
+    sendCmd(cmd);
+    recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    std::cout << "[pcCorruptionTest] PC set to 0x" << std::hex << badPC
+               << std::dec << ", resumed. Waiting " << wait_ms << "ms...\n";
+
+    // ── WAIT past the expected watchdog timeout ─────────────────────
+    std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+
+    // ── POST-CHECK: try to halt and read cruise_state ───────────────
+    sendCmd("halt");
+    std::string haltResp = recvResponse();
+
+    if (haltResp.empty()) {
+        std::cerr << "[pcCorruptionTest] No response from target after halt — "
+                     "system may be unresponsive.\n";
+        return false;
+    }
+
+    snprintf(cmd, sizeof(cmd), "mdw 0x%08X", cruiseStateAddr);
+    sendCmd(cmd);
+    std::string postResp = recvResponse();
+
+    sendCmd("resume");
+    recvResponse();
+
+    if (!std::regex_search(postResp, m, wordReg)) {
+        std::cerr << "[pcCorruptionTest] Failed to parse post cruise_state: "
+                  << postResp << "\n";
+        return false;
+    }
+
+    uint32_t cruiseStatePost = std::stoul(m[1], nullptr, 16);
+    bool passed = (cruiseStatePost == 0);   // STATE_OFF == 0, implies reset occurred
+
+    if (!passed)
+        std::cerr << "[pcCorruptionTest] System did not recover to safe state "
+                     "(cruise_state=" << cruiseStatePost << ")\n";
+
+    return passed;
 }
