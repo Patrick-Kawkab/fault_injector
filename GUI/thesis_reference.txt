@@ -1,0 +1,1136 @@
+### Abstract
+
+The automotive industry is undergoing a software revolution, with modern vehicles containing more code than a fighter jet. Yet this complexity introduces critical safety risks—a single software bug can disable brakes, corrupt sensor readings, or cause system failures that endanger lives. ISO 26262, the automotive functional safety standard, requires rigorous fault injection testing to prove software can handle failures gracefully. The challenge is that existing testing tools are either prohibitively expensive commercial products or academic prototypes lacking industry-specific features, leaving a critical gap in accessible safety validation tools.
+
+This thesis addresses this gap by designing and implementing a comprehensive fault injection framework specifically engineered for ISO 26262 compliance. Unlike existing solutions, our framework combines affordability, automotive focus, and automated compliance reporting in a single integrated system. The framework injects three fundamental fault categories—sensor corruption (stuck values, out-of-range readings), timing faults (deadline violations, execution delays), and memory corruption (bit flips)—that represent real-world failure modes in automotive systems. The architecture employs a three-layer design: a Python-based orchestration layer manages test campaigns and generates reports, while a C++ based injection layer provides lowoverhead fault triggering through strategic code instrumentation,  and a Simulation and Monitoring Layer that gives out a JSON file containing injection confirmation verifying faults actually occurred, detection outcomes indicating safety mechanism effectiveness, system response descriptions documenting behavior under faults, timing measurements providing latency data, and any error conditions or unexpected observations.
+
+Key innovations include real-time visualization dashboards, configurable test campaigns via JSON files, and automated generation of ISO 26262-compliant coverage reports. The framework targets 90%+ fault detection rates while maintaining minimal performance impact. Validation will be conducted using industry-relevant scenarios. This work delivers a production-ready tool that democratizes safety testing, making professional-grade fault injection accessible to universities, startups, and small automotive suppliers worldwide.
+
+Keywords: Automotive Safety Testing, Fault Injection Framework, ISO 26262 Compliance, Software-Based Testing, Safety-Critical Systems, ASIL Validation.
+
+## 1. Introduction
+
+The automotive industry stands at a critical intersection of innovation and safety. Modern vehicles have evolved from purely mechanical systems into sophisticated software-driven platforms, with luxury cars now containing over 100 million lines of code—more than modern aircraft or spacecraft. This software controls everything from entertainment systems to life-critical functions such as anti-lock braking, electronic stability control, and autonomous driving features. While this digital transformation has enabled remarkable advances in vehicle performance, efficiency, and user experience, it has also introduced unprecedented safety challenges.
+
+Software defects in automotive systems can have catastrophic consequences. Unlike bugs in consumer applications that might cause inconvenience, automotive software failures can directly result in loss of life. A corrupted sensor reading, a missed deadline in a real-time control loop, or a bit flip in critical memory can disable safety systems at the exact moment they are needed most. The increasing complexity of automotive software—with multiple electronic control units (ECUs) communicating over networks, processing sensor data in real-time, and making split-second decisions—makes comprehensive testing more critical and more challenging than ever.
+
+Recognizing these risks, the automotive industry developed ISO 26262, an international standard for functional safety in road vehicles. Published in 2011 and revised in 2018, ISO 26262 defines a comprehensive safety lifecycle covering all phases from concept through decommissioning. A key requirement of this standard is systematic fault injection testing—deliberately introducing errors into software to verify it can detect, respond to, and recover from failures appropriately. This testing approach moves beyond traditional "happy path" validation to ensure systems fail safely rather than catastrophically.
+
+However, implementing effective fault injection testing presents significant practical challenges. Commercial fault injection tools, while powerful, typically require substantial financial investment—often tens of thousands of dollars in licensing fees—placing them out of reach for academic researchers, startups, and small automotive suppliers. Academic tools, while freely available, often lack the automotive-specific features necessary for ISO 26262 compliance, such as standardized reporting formats and coverage metrics aligned with certification requirements. This accessibility gap means that many organizations developing safety-critical automotive software lack practical means to conduct thorough fault injection campaigns.
+
+This thesis addresses this critical gap by presenting the design and implementation of a comprehensive, open-source fault injection framework specifically engineered for ISO 26262compliant automotive software testing. By combining software-based fault injection techniques with automated compliance reporting and a modular, extensible architecture, this framework aims to democratize access to professional- grade safety validation tools. The following sections detail the specific problems this framework addresses, its objectives, and the methodology employed in its development.
+
+### 1.1 Problem Statement
+
+#### 1.1.1 Problem Analysis
+
+The development and validation of safety-critical automotive software faces several interconnected challenges that collectively create a significant barrier to thorough safety testing.
+
+First, the complexity of modern automotive systems has grown exponentially. A typical modern vehicle contains 70-100 electronic control units (ECUs) running millions of lines of code. These systems must operate in real-time environments with strict timing constraints, often measured in milliseconds. They must process data from dozens of sensors, make critical decisions, and coordinate actions across multiple subsystems—all while maintaining functional safety under various fault conditions. Testing such complex systems comprehensively requires sophisticated tools capable of simulating the wide range of potential failures that can occur in real-world operation.
+
+Second, ISO 26262 imposes rigorous testing requirements that go beyond traditional software validation. The standard requires demonstrating specific fault detection coverage percentages depending on the Automotive Safety Integrity Level (ASIL) of the system. For ASIL D systems (highest criticality), developers must prove that their safety mechanisms can detect and respond to faults with very high coverage rates, typically exceeding 90%. This requires systematic fault injection testing across multiple fault types and scenarios—a task that is extremely timeconsuming and error-prone when performed manually.
+
+Third, existing fault injection tools present significant accessibility challenges. Commercial tools such as those from dSPACE, Vector, and National Instruments offer comprehensive capabilities but come with prohibitive costs. Annual licensing fees can range from $50,000 to over $200,000, often requiring additional hardware investments. While these costs may be manageable for large automotive manufacturers, they create insurmountable barriers for:
+
+- Academic institutions conducting automotive safety research.
+
+- Startups developing innovative automotive software solutions.
+
+- Small and medium-sized suppliers in the automotive supply chain.
+
+- Developing countries building automotive industries.
+
+Academic and open-source alternatives exist but typically suffer from different limitations. Tools like FAIL* (Flexible Automotive Integrated Learning) or FERRARI provide fault injection capabilities but were not designed specifically for automotive applications. Consequently, they lack features essential for ISO 26262 compliance such as:
+
+- Standardized reporting formats aligned with certification requirements.
+
+- Built-in coverage metrics for diagnostic capabilities.
+
+- Support for automotive-specific fault models.
+
+- Integration with automotive development workflows.
+
+- Documentation suitable for audit and certification processes.
+
+Fourth, the manual effort required for fault injection campaigns is substantial. A comprehensive test campaign for a single automotive function might require hundreds or thousands of individual test cases, each involving:
+
+- Configuration of fault parameters (type, timing, duration).
+
+- Execution of the test scenario.
+
+- Collection and analysis of results.
+
+- Documentation of outcomes for compliance purposes. - 	Correlation of results with safety requirements.
+
+Without automation, this process consumes significant engineering time and is prone to inconsistencies and gaps in coverage.
+
+ Fifth, there is a knowledge gap between automotive safety requirements and available testing tools. Many engineers working in automotive software development understand ISO 26262 requirements but lack practical experience with fault injection techniques. Conversely, fault injection researchers may not be familiar with automotive-specific safety standards. This gap makes it difficult to bridge academic research and industry practice effectively.
+
+Finally, the lack of accessible tools creates a vicious cycle. Because comprehensive fault injection testing is expensive and difficult, many organizations either skip it entirely (taking on unacceptable safety risks) or perform only minimal testing (potentially missing critical vulnerabilities). This situation not only threatens safety but also hinders innovation, as new entrants to the automotive software market face disproportionate barriers to demonstrating their solutions meet safety standards.
+
+These challenges collectively demonstrate a clear need for an accessible, automotive-focused fault injection framework that combines the sophistication of commercial tools with the accessibility of open-source solutions, while specifically addressing ISO 26262 compliance requirements.
+
+#### 1.1.2 Identify client’s requirements
+
+In this project, we will design and manufacture a compact mold for mechanical alloy applications based on the client’s requirements. The client's requirements will be represented below.
+
+While this project is academically driven, its requirements are derived from the needs of the broader automotive software development community, including academic researchers, small automotive suppliers, and safety engineers. Through literature review and analysis of ISO 26262 requirements, the following needs have been identified:
+
+- Comprehensive Fault Coverage The framework must support injection of the three most critical fault types in automotive systems: sensor corruption, timing violations, and memory corruption. These fault types represent the primary failure modes observed in real-world automotive incidents.
+
+- ISO 26262 Compliance Support The framework must generate reports and metrics that align with ISO 26262 Part 6 (Software Development) requirements, including diagnostic coverage metrics, fault detection rates, and traceability to safety requirements.
+
+- Accessibility and Low Cost The solution must be freely available as open-source software, requiring no specialized hardware or expensive licenses, making it accessible to universities, startups, and researchers worldwide.
+
+- Ease of Use The framework must provide intuitive configuration mechanisms and clear documentation, allowing engineers without deep fault injection expertise to conduct effective testing campaigns.
+
+- Automation The framework must automate test execution, result collection, and report generation to minimize manual effort and reduce the potential for human error.
+
+- Performance Fault injection mechanisms must introduce minimal overhead (<5%) to ensure realistic testing conditions that accurately reflect production system behavior.
+
+- Extensibility The architecture must be modular and well-documented, allowing researchers and developers to extend the framework with additional fault types, target platforms, or reporting capabilities.
+
+- Industry Relevance The framework must be validated using realistic automotive use cases that demonstrate its applicability to real-world safety-critical systems.
+
+#### 1.1.3. Design Parameters and Specifications
+
+Specifications are the requirements specified by the client with specific numbers. On the other hand, parameters are the requirements the client identifies without specific numbers. Based on the client’s requirements, the musts and wants will be determined and separated from each other by inserting a table.
+
+*Table 1. 1**.Design Parameter and Specifications **Table 1.1Design Parameter and Specifications** *
+
+| **Requirements ** | **Specifications ** | **Parameters ** |
+| --- | --- | --- |
+| **Fault Injection ** **Capabilities** | Support 3 fault types (sensor, timing, memory) Minimum 500 test scenarios per campaign Injection timing accuracy: ±10ms | Flexible fault configuration Support for deterministic and stochastic injection Configurable fault duration |
+| **Performance** | Runtime overhead < 5% Injection latency < 1ms Support real-time constraints | Minimal impact on target software Efficient communication protocol Low memory footprint |
+| **ISO 26262 Compliance** | Fault detection coverage > 90% Diagnostic coverage metrics aligned with ISO 26262 Part 6 ASIL C and D support | Automated compliance reporting Traceability to safety requirements Certification-ready documentation |
+| **Requirements ** | **Specifications ** | **Parameters ** |
+| **Usability** | Configuration file format: YAML Setup time < 30 minutes Report generation time < 5 minutes | Intuitive configuration syntax Clear error messages Comprehensive documentation |
+| **Accessibility** | Zero licensing cost No specialized hardware required Cross-platform (Linux, Windows) | Open-source license (MIT/GPL) Standard programming languages Common development tools |
+| **Architecture** | Python 3.8+ (orchestrator) C/C++ (injection layer) Socket-based communication (TCP/IP) | Modular component design Clear interface definitions Extensible architecture |
+| **Reporting** | Output formats: HTML, JSON  Report generation: automated Visualization: graphs and charts | Professional report templates Customizable report content Export capabilities |
+| **Validation** | Test with 2-3 automotive use cases Minimum 1000 total test executions Compare against manual testing | Realistic automotive scenarios Measurable validation criteria Documented test results |
+
+#### 1.1.4. Musts and Wants
+
+In this section, the musts and wants of our project will be determined based on the specifications and parameters in the previous section. Each wants to be obtained in this section will have a weight based on its importance to the client.
+
+*Table 2 Musts and Wants** *
+
+| **Requirements ** | **Musts ** | **Wants ** | **Weight of Wants ** |
+| --- | --- | --- | --- |
+| **Fault Injection** | Sensor corruption faults Timing violation faults Memory corruption faults | Communication fault injection Hardware fault simulation Complex multi-fault scenarios | High (8/10) Medium (5/10) Low (3/10) |
+| **Compliance** | ISO 26262 coverage metrics Automated report generation Fault detection rate calculation | Full AUTOSAR compliance Certification audit trail | Medium (6/10) Low (4/10) Medium (5/10) |
+| **Requirements ** | **Musts ** | **Wants ** | **Weight of Wants ** |
+| **Usability** | Command-line interface Basic documentation | Graphical user interface (GUI) Interactive dashboard Tutorial videos | High (7/10) High (8/10) Low (3/10) |
+| **Performance** | < 5% overhead Real-time compatibility Accurate timing | < 2% overhead Performance profiling tools Optimization recommendations | Medium (6/10) Low (4/10) Low (3/10) |
+| **Architecture** | Python orchestrator C injection layer Socket communication | Plugin architecture Cloud deployment support Distributed testing | Medium (5/10) Low (2/10) Low (3/10) |
+| **Validation** | 2 automotive use cases Basic validation tests Results comparison | 5+ automotive scenarios Benchmark against commercial tools Industry pilot studies | High (7/10) Medium (6/10) Low (4/10) |
+
+#### 1.1.5. Realistic Constraints
+
+After understanding the client's requirements and identifying the musts and wants, our team will brainstorm requirements that will help us design our project effectively and efficiently. Additionally, each requirement will be categorized into musts and wants, and each want will be assigned a weight based on its importance to the team.
+
+*Table 3 Realistic Constraints** *
+
+| **Requirements ** | **Design Parameters ** | **Must or Want ** |
+| --- | --- | --- |
+| **Budget** | Massive budget for hardware | Must |
+| **Development ** **Environment** | Must use freely available tools (VS Code, GCC, Python) | Must |
+| **Testing Hardware** | Limited to desktop/laptop computers (no actual vehicles or HIL Must systems) *_So far_* |
+| **Expertise Level** | Team has academic knowledge but limited industry experience | Must |
+| **Documentation** | Must provide complete technical documentation for academic evaluation | Must |
+| **Requirements ** | **Design Parameters ** | **Must or Want ** |
+| **Source Code Access** | Target software must have source code available for instrumentation | Must |
+| **Validation Scope** | Simulation-based validation only (no real vehicle testing) | Must |
+| **Advanced Features** | Machine learning-based fault selection | Want (Low priority) |
+| **Industry Integration** | Integration with commercial automotive toolchains | Want (Low priority) |
+
+#### 1.1.6. Design Standards
+
+This project will be issued using iso standards and following the code of ethics standards: NSPE, ASME, and SCE.
+
+This project adheres to multiple professional and ethical standards to ensure quality, safety, and ethical compliance. ISO 26262 - Road Vehicles Functional Safety
+
+The framework design and validation approach follow ISO 26262:2018, particularly:
+
+- Part 6: Product development at the software level.
+
+- Part 8: Supporting processes (particularly regarding fault injection testing).
+
+- Part 9: Automotive Safety Integrity Level (ASIL)-oriented and safety-oriented analyses.
+
+While the framework itself is a testing tool and not subject to certification, its design enables users to generate evidence required for ISO 26262 compliance.
+
+ISO/IEC 25010 - Systems and Software Quality Requirements and Evaluation. The framework's software quality attributes are evaluated against ISO/IEC 25010,  focusing on:
+
+- Functional suitability
+
+- Performance efficiency
+
+- Compatibility
+
+- Usability
+
+- Reliability
+
+- Maintainability
+
+- Portability
+
+##### *1.1.6.1 IEEE Standards *
+
+- IEEE 1012: Software Verification and Validation
+
+- IEEE 829: Software Test Documentation (for report generation formats)
+
+##### *1.1.6.2 Software Engineering Code of Ethics *
+
+This project adheres to the Software Engineering Code of Ethics and Professional  Practice established by ACM/IEEE-CS, specifically:
+
+- PUBLIC: Acting consistently with the public interest and safety
+
+- CLIENT AND EMPLOYER: Acting in the best interests of the academic institution
+
+- PRODUCT: Ensuring the framework meets highest professional standards
+
+- JUDGMENT: Maintaining integrity and independence in professional judgment
+
+- MANAGEMENT: Promoting ethical approach to software development
+
+- PROFESSION: Advancing integrity and reputation of the profession
+
+- COLLEAGUES: Being fair to and supportive of colleagues
+
+- SELF: Participating in lifelong learning and ethical practice
+
+##### *1.1.6.3 Open-Source Standards *
+
+- MIT or GPL-3.0 licensing for code distribution
+
+- Semantic Versioning (SemVer) for version management
+
+- Conventional Commits for documentation
+
+These standards guide all design decisions, implementation approaches, and validation  methodologies employed throughout the project.
+
+### 1.2 Objective
+
+The heart of this graduation project is simple: we want to make automotive safety testing accessible to everyone. Right now, if you're a small company, a startup, or a university researcher trying to test whether your automotive software can handle real-world failures, you're faced with tools that cost tens or hundreds of thousands of dollars. That's not right. Safety shouldn't be a luxury only big companies can afford.
+
+Our goal is to build a comprehensive fault injection framework that brings professional-grade safety testing within reach of anyone who needs it. We're creating an open-source tool that meets the rigorous requirements of ISO 26262—the automotive safety standard—while being free, userfriendly, and practical enough for real-world use.
+
+#### 1.2.1 What We're Building
+
+At its core, our framework does something critical but often overlooked: it deliberately breaks software in controlled ways to see if it fails safely. Think of it like a flight simulator for software— we create disasters in a safe environment so the real system knows how to survive them.
+
+We're focusing on **three** types of failures that cause the most problems in real vehicles:
+
+First, sensor corruption—when speed sensors get stuck at zero, temperature readings go haywire, or pressure sensors report impossible values. These are the kinds of faults that, if not detected, could disable your cruise control at highway speeds or cause your engine to overheat.
+
+Second, timing violations—when the software misses critical deadlines. In real-time automotive systems, being 100 milliseconds late isn't just slow; it can be dangerous. Imagine your anti-lock brakes deciding too late whether to pump or hold.
+
+Third, memory corruption—those random bit flips caused by cosmic rays or electromagnetic interference that can turn a "brake" command into something completely different. It sounds like science fiction, but it happens, and safety- critical systems need to handle it.
+
+Our approach uses two programming languages working together: Python handles the high-level orchestration—loading test configurations, managing campaigns, generating reports—while C handles the low-level fault injection that happens deep inside the target software. Python keeps things easy to use; C keeps things fast.
+
+#### 1.2.2 Making Safety Testing Practical
+
+Beyond just injecting faults, we're tackling the paperwork problem. ISO 26262 doesn't just require testing; it requires proof. Detailed coverage reports, fault detection metrics, traceability matrices— all the documentation needed for safety certification. Currently, engineers spend countless hours manually creating these reports. Our framework generates them automatically.
+
+We'll validate everything using real automotive scenarios—adaptive cruise control and anti-lock braking systems—running over a thousand different fault injection tests to prove the framework works in realistic conditions.
+
+We're also obsessed with usability. Safety testing shouldn't require a PhD in fault injection. We're using simple JSON configuration files (basically structured text files that anyone can read and edit), clear documentation, and a setup process that takes under 30 minutes. If you can follow a recipe, you can configure a test campaign.
+
+Performance matters too. Fault injection frameworks often slow down the software they're testing so much that the results become meaningless. We're targeting less than 5% overhead—barely noticeable—so tests accurately reflect how the software will behave in production.
+
+#### 1.2.3 Going Beyond the Basics
+
+If time permits, we're also building some features that take the framework from "useful" to "impressive":
+
+A real-time dashboard that lets you watch fault injection campaigns as they run— seeing each fault injected, how the system responds, and whether it detects the problem. It's like having a window into your software's immune system.
+
+A truly modular architecture means this isn't just our project—it's a foundation others can build on. Want to add a new fault type? Test a different automotive system? Integrate with another tool? The architecture supports it.
+
+#### 1.2.4 How We'll Know We Succeeded
+
+We'll know we've succeeded when: The framework actually works—all three fault types inject reliably with configurable parameters that give users real control.
+
+- It catches problems—achieving over 90% fault detection in our validation tests, meaning the framework successfully helps software detect and respond to failures.
+
+- It's fast—keeping overhead under 5% so testing stays realistic.
+
+- It's proven—validated with two real automotive use cases that demonstrate it works for actual safety-critical systems.
+
+- It produces the paperwork—generating ISO 26262-compliant reports that would actually be useful for certification.
+
+- It's documented—complete technical documentation that meets academic standards and helps future users.
+
+- It's presentable—a comprehensive demonstration that shows not just what we built, but why it matters.
+
+### 1.3 Methodology
+
+This project follows a structured two-semester development approach designed to  systematically build and validate a hardware-based fault injection framework for automotive embedded systems. The first semester focuses on establishing the framework foundation using a Tiva-C microcontroller for initial development and validation. The second semester advances to TriCore AURIX microcontroller testing, representative of production automotive ECUs. This phased hardware progression allows the team to master fundamental concepts with accessible hardware before tackling the complexity of automotive-grade systems.
+
+#### 1.3.1 First Semester: Foundation and Framework Development
+
+The first semester establishes the complete framework architecture and validates core functionality using the Texas Instruments Tiva-C microcontroller. The Tiva-C provides an ideal development platform: widely available, well-documented, ARM Cortex-M4 architecture familiar to the team, comprehensive debugging support, and sufficient complexity to validate fault injection concepts without overwhelming automotive-specific complications.
+
+##### *1.3.1.1 Phase 1: Research, Design, and Planning  *
+
+This foundational phase establishes both theoretical understanding and practical architecture. Activities include comprehensive literature review of fault injection techniques, in-depth study of ISO 26262 requirements (particularly Part 6 for software and Part 8 for fault injection), and analysis of existing commercial and academic fault injection tools and frameworks.
+
+The team develops detailed system architecture for the three-component framework: interactive orchestrator, fault injection library, and monitoring/reporting subsystem. Tiva-C specifications are studied including debugging interfaces, memory architecture, and peripheral access mechanisms. Communication protocols (JTAG via debug access port and serial UART) are researched and selected.
+
+Requirements are formally defined covering functional capabilities (fault types to support, injection precision, monitoring features) and non-functional constraints (performance overhead targets, timing accuracy, ease of use). Risk assessment identifies potential technical challenges (hardware interface complexity, timing precision), schedule risks (learning curve, hardware availability), and resource limitations (team size, equipment access).
+
+Deliverables include complete literature review chapter, detailed system architecture with component specifications, interface definitions for inter-component communication, project timeline with realistic milestones, and risk management plan with mitigation strategies.
+
+##### *1.3.1.2 Phase 2: Implementation and Integration  *
+
+This extensive phase encompasses development of all framework components and their integration into a functional system, using iterative cycles of implementation, testing, and refinement.
+
+#### 1.3.2 Orchestrator Development
+
+The Bash-based orchestrator with Whiptail text interface is implemented to provide user-friendly interaction. The interface guides users through menu-driven configuration, collecting fault injection parameters: fault type selection (memory bit flips or sensor data corruption), precise location specification (memory addresses or sensor register addresses), temporal parameters (injection timing relative to program execution, fault duration, repetition frequency), and expected system behavior for validation purposes.
+
+Input validation ensures users cannot configure invalid or dangerous test scenarios. Configuration templates for common testing patterns accelerate setup. Context-sensitive help provides guidance at each menu. Upon completion, the orchestrator generates a structured JSON specification file that formally defines the test campaign with all parameters, enabling reproducibility and configuration sharing.
+
+#### 1.3.3 Fault Injection Library Development
+
+The core library interfaces with Tiva-C hardware through its debug access port. JTAG protocol implementation provides non-intrusive access to processor internals: memory reads and writes, register access, execution control, and breakpoint management. Serial UART communication is implemented as an alternative interface for scenarios where JTAG is unavailable.
+
+The library parses JSON configuration files and translates high-level fault specifications into precise hardware operations. For memory bit flip injection, the library reads current memory contents at specified addresses, performs bit manipulation according to configuration (single-bit or multi-bit flips), writes modified values back to memory, and verifies successful injection through readback confirmation.
+
+For sensor corruption, the library identifies sensor data locations (typically peripheral registers or specific memory buffers), intercepts data during program execution, and replaces valid readings with fault-injected values. Supported corruption modes include stuck-at faults (constant values), out-of-range values (exceeding sensor physical limits), and noisy signals (adding random variations).
+
+Timing control ensures faults inject at precise program execution points, critical for realistic failure simulation. The library leverages Tiva-C timer peripherals and debugging features to achieve millisecond-level injection accuracy.
+
+#### 1.3.4 Monitoring and Reporting Development
+
+Concurrent with fault injection, the monitoring subsystem captures target system behavior through Tiva-C debugging and trace capabilities. The ARM Cortex-M4 architecture provides hardware debugging features including instruction trace, data watchpoints, and performance counters—all accessible non-intrusively through the debug interface.
+
+The monitoring component captures multiple data streams: fault detection indicators (did safety mechanisms identify the fault?), system response actions (safe state entry, recovery attempts, or failure), timing measurements (latency from injection to detection), execution flow changes (unexpected branches or exceptions), and any anomalous behaviors.
+
+Captured data is aggregated into a structured JSON results file containing test identification, injection confirmation, detection outcomes, response analysis, timing measurements, and coverage contribution. The orchestrator then synthesizes this data into user-friendly reports highlighting pass/fail status, detection coverage percentages, timing statistics, and flagged anomalies.
+
+#### 1.3.5 Integration and Testing
+
+As components mature, integration proceeds iteratively. Simple test cases verify basic communication: orchestrator generates configurations, library receives and parses them correctly, hardware commands execute as intended, monitoring captures responses, results return successfully.
+
+Complexity increases progressively: single fault injection, multiple sequential faults, concurrent monitoring and injection, varied fault types and locations, edge cases and error conditions. The Tiva-C is programmed with representative embedded software (simplified sensor processing or control algorithms) that includes basic safety mechanisms for validation.
+
+Hundreds of test scenarios execute across different fault types, memory locations, injection timings, and fault durations. Performance profiling measures injection overhead and timing accuracy. Discovered issues are debugged systematically, with fixes validated through regression testing.
+
+*** ***
+
+##### *1.3.1.3 **Phase 3: Validation, Documentation, and Semester Closure  *
+
+The final first-semester phase validates the framework against requirements, completes documentation, and prepares for second-semester advancement to TriCore.
+
+Validation testing executes comprehensive fault injection campaigns. Results are compared against manual testing baselines where available. Statistical analysis confirms that fault detection rates and timing measurements meet specifications. Edge cases and boundary conditions are tested to ensure robustness. Any limitations discovered with Tiva-C testing are documented for consideration in TriCore planning.
+
+First-semester documentation includes interim thesis chapters (introduction, literature review, methodology, preliminary results), technical documentation covering architecture and implementation, user guide for framework operation, and lessons learned document capturing challenges and solutions.
+
+Semester deliverables include working framework validated on Tiva-C hardware, complete firstsemester documentation, presentation demonstrating framework capabilities, and detailed plan for second-semester TriCore transition including anticipated modifications and validation approach.
+
+#### 1.3.6 Technical Architecture
+
+The fault injection framework employs a modular three-component architecture designed for systematic hardware fault analysis, initially developed for Tiva-C and subsequently adapted for TriCore AURIX.
+
+##### *1.3.6.1 Component 1: Interactive Orchestrator *
+
+At the highest level, a Bash-based orchestrator with Whiptail text-based user interface provides the primary interaction point. This component remains largely unchanged between Tiva-C and TriCore platforms, demonstrating the architecture's hardware abstraction.
+
+The interface guides users through intuitive menu-driven configuration collecting fault injection parameters: fault type (memory bit flip or sensor data corruption), precise fault location (memory addresses or sensor identifiers), temporal parameters (injection timing, duration, frequency), and expected system behavior for validation.
+
+Real-time input validation prevents invalid configurations. Context-sensitive help assists users at each step. Common test scenarios are available as templates. Upon completion, the orchestrator generates a structured JSON specification defining the entire test campaign.
+
+This JSON format provides human readability for review, machine parseability for automated processing, version control compatibility for tracking test evolution, and shareability among team members for collaboration.
+
+##### *1.3.6.2 Component 2: Fault Injection Library *
+
+The fault library bridges high-level configuration and low-level hardware manipulation. This component requires platform-specific implementation for Tiva-C and TriCore but maintains consistent external interfaces.
+
+**For Tiva-C (First Semester): **
+
+The library interfaces with the ARM Cortex-M4 processor via Serial Wire Debug (SWD) or JTAG protocols. Texas Instruments debugging tools provide memory access, register manipulation, and execution control. The library parses JSON configurations and translates them into Tiva-C-specific operations for bit flips and sensor corruption.
+
+**For TriCore AURIX (Second Semester): **
+
+The library is adapted to TriCore architecture and Infineon debugging protocols. Debug Access Port (DAP) provides comprehensive hardware access. JTAG remains the primary interface with serial UART as fallback. TriCore-specific memory architecture and peripheral access mechanisms are accommodated. Additional automotive-specific features may be leveraged (e.g., safety watchdogs, lockstep cores).
+
+Regardless of platform, the library provides: JSON configuration parsing, precise fault injection at specified timing points, verification of successful injection, and error handling for communication or hardware failures.
+
+Memory bit flip injection reads current memory contents, manipulates specified bits, writes modified values, and confirms through readback. Sensor corruption intercepts sensor data locations and replaces values with configured fault patterns: stuck-at faults, out-of-range values, or noisy signals.
+
+Critical timing control ensures realistic fault injection. Hardware timers and debugging features enable millisecond-level precision for injection at specific program execution points.
+
+*** ***
+
+##### *1.3.6.3 Component 3: Monitoring and Reporting *
+
+The monitoring subsystem observes target system behavior through hardware debugging features, capturing fault detection, system responses, timing measurements, and anomalies.
+
+Platform-specific debugging capabilities are leveraged:
+
+- Tiva-C: ARM Cortex-M4 trace features, data watchpoints, performance counters - TriCore: AURIX debugging and trace units, safety mechanism monitors, extensive    diagnostic features
+
+Captured data aggregates into structured JSON results files containing test identification, injection confirmation, detection outcomes, response analysis, timing measurements, and coverage metrics. The orchestrator synthesizes this data into concise feedback reports highlighting pass/fail status, detection coverage percentages, timing statistics, and anomalies requiring attention.
+
+For TriCore testing, reports include ISO 26262-relevant metrics: diagnostic coverage calculations, single-point fault coverage, latent fault detection, and traceability to safety requirements.
+
+This three-component pipeline ensures repeatable, automated fault injection enabling precise evaluation of system robustness across different hardware platforms.
+
+#### 1.3.7 Development Tools and Environment
+
+**First Semester (Tiva-C): **
+
+- Texas Instruments Code Composer Studio or similar IDE
+
+- Tiva-C LaunchPad development board
+
+- ARM JTAG/SWD debugger
+
+- Bash scripting with Whiptail for interface
+
+- C/C++ for fault injection library
+
+- JSON for configuration and data exchange
+
+- Git for version control
+
+- Linux (Ubuntu 22.04 LTS) development environment
+
+*** ***
+
+##### *1.3.7.1 Expected Outcomes  *
+
+This methodology delivers a complete, validated fault injection framework demonstrating:
+
+- Functional framework operational on Tiva-C hardware
+
+- All fault types injecting successfully with configurable parameters
+
+- User-friendly interface enabling test configuration without extensive training
+
+- Validated performance meeting overhead and timing requirements
+
+- Complete first-semester documentation
+
+** **
+
+### 4. Technical Design
+
+#### 4.1 System Architecture Overview
+
+The fault injection framework employs a flexible architecture supporting two distinct fault injection approaches: emulation-based fault injection using QEMU for software testing, and baremetal fault injection for hardware validation. This dual-approach design enables comprehensive testing across different environments, from early development using emulation to final validation on actual embedded hardware.
+
+The architecture is designed around modularity and extensibility, allowing the same orchestrator and core injection logic to work with both emulation and hardware targets. This design minimizes code duplication while accommodating the fundamental differences between emulated and physical hardware testing.
+
+##### 4.1.1 Architectural Overview
+
+The framework consists of three primary components that operate differently depending on the selected fault injection mode:
+
+- Orchestrator: Terminal-based user interface for configuration and control
+
+- Fault Injector: Core injection logic adaptable to target type
+
+- Target System: Either QEMU emulation or bare-metal hardware
+
+The key architectural decision is that the orchestrator remains consistent across both modes, while the injector adapts its interface and communication mechanisms based on the target type. This separation enables users to develop and validate test configurations using fast emulation, then execute identical tests on hardware without reconfiguration.
+
+##### 4.1.2 Emulation-Based Fault Injection Architecture
+
+In emulation mode, the framework leverages QEMU (Quick Emulator) to create a virtual embedded system environment for fault injection testing.
+
+***4.1.2.1 Architecture Components: ***
+
+User (Terminal Interface)
+
+▼
+
+config.json + start command
+
+QEMU Monitor Protocol
+
+results.json
+
+User (Terminal Interface)
+
+Orchestrator (Bash + Whiptail TUI)
+
+•
+
+Fault configuration collection
+
+•
+
+Test parameter validation
+
+•
+
+JSON configuration generation
+
+•
+
+QEMU session management
+
+•
+
+Result aggregation and reporting
+
+Fault Injector (Emulation Mode)
+
+•
+
+Parse JSON configuration
+
+•
+
+Launch QEMU session with target image
+
+•
+
+Establish QEMU monitor connection
+
+•
+
+Execute fault injection via QEMU commands
+
+•
+
+Monitor virtual hardware state
+
+•
+
+Capture execution traces
+
+QEMU Virtual Machine
+
+Emulated Embedded System
+
+•
+
+Virtual CPU (ARM Cortex
+
+-
+
+M4 / TriCore)
+
+•
+
+Emulated memory
+
+•
+
+Simulated peripherals and sensors
+
+•
+
+Target embedded software
+
+Orchestrator (Report Generation)
+
+•
+
+Parse results
+
+•
+
+Generate user
+
+-
+
+friendly report
+
+•
+
+Display in terminal
+
+Orchestrator (Report Generation)
+
+***4.1.2.2 Emulation Mode Operation: ***
+
+The orchestrator collects fault injection parameters through the terminal interface: fault type (memory bit flip or sensor corruption), target location (memory address or sensor register), injection timing, and expected behavior. Upon configuration completion, the orchestrator generates a JSON specification and invokes the fault injector in emulation mode.
+
+The fault injector starts a QEMU session configured for the target embedded architecture (ARM Cortex-M4 for Tiva-C emulation, or TriCore for AURIX emulation in semester two). QEMU loads the embedded system image containing the software under test and begins virtual execution. The injector establishes a connection to QEMU's monitor interface, which provides programmatic control over the virtual machine's state.
+
+During execution, the injector uses QEMU monitor commands to inject faults at specified times. For memory bit flips, the injector pauses virtual machine execution, reads target memory locations, modifies bits according to configuration, writes changed values back, and resumes execution. For sensor corruption, the injector modifies emulated peripheral registers or memory locations representing sensor data.
+
+QEMU's built-in tracing and debugging capabilities enable comprehensive monitoring:
+
+instruction-level execution traces show program flow, memory access logs reveal fault propagation, and register snapshots capture system state at critical moments. The injector captures this monitoring data throughout the test.
+
+Upon test completion, the injector terminates the QEMU session, aggregates captured data into a results JSON file, and returns control to the orchestrator. The orchestrator parses results and presents them through the terminal interface.
+
+***4.1.2.3 Advantages of Emulation-Based Approach: ***
+
+Fast iteration: QEMU executes significantly faster than real-time in many cases, enabling rapid test execution. No hardware dependencies: Testing proceeds without physical hardware availability, avoiding procurement delays and access conflicts. Comprehensive observability: QEMU provides complete visibility into virtual machine state that would be difficult or impossible with physical hardware. Reproducibility: Virtual environments eliminate hardware variability, ensuring consistent test conditions. Safe experimentation: Faults cannot damage virtual hardware, allowing aggressive testing without risk.
+
+***4.1.2.4 Limitations of Emulation-Based Approach: ***
+
+Timing approximation: QEMU's timing model doesn't perfectly match real hardware, potentially missing timing-dependent bugs. Hardware behavior differences: Emulated peripherals approximate but don't perfectly replicate physical device behavior. Limited to emulated architectures: QEMU supports many architectures but not all embedded processors. No realworld interference: Environmental factors like electromagnetic interference don't affect emulation.
+
+##### 4.1.3 Bare-Metal Fault Injection Architecture
+
+In bare-metal mode, the framework injects faults directly into physical embedded  hardware, providing realistic validation of safety mechanisms under actual operating  conditions.
+
+** **
+
+***4.1.3.1 Architecture Components: ***
+
+** **
+
+JTAG / Serial Protocol
+
+** **
+
+** **
+
+Fault Injector (
+
+Bare
+
+-
+
+Metal Mode
+
+)
+
+•
+
+Parse JSON configuration
+
+•
+
+Establish debug interface connection
+
+(
+
+JTAG/Serial)
+
+•
+
+Verify hardware connectivity
+
+•
+
+Execute fault injection via debug commands
+
+•
+
+Read hardware state through debug interface
+
+•
+
+Capture hardware trace data
+
+Physical Embedded Hardware
+
+Debug Access Port (DAP)
+
+•
+
+JTAG interface
+
+•
+
+Serial communication (UART)
+
+•
+
+Hardware breakpoints
+
+•
+
+Memory access
+
+Target Microcontroller
+
+•
+
+Tiva
+
+-
+
+C (ARM Cortex
+
+-
+
+M4)
+
+•
+
+Real memory and peripherals
+
+•
+
+Physical sensors (or simulated inputs)
+
+•
+
+Embedded debugging and trace units
+
+•
+
+Target embedded software
+
+** **
+
+** **
+
+** **
+
+** **
+
+***4.1.3.2 Bare-Metal Mode Operation: ***
+
+The orchestrator collects fault injection parameters identically to emulation mode, maintaining consistent user experience. The JSON configuration format remains identical, enabling test portability between emulation and hardware.
+
+The fault injector operates in bare-metal mode when hardware is detected and configured. It establishes a connection to the physical microcontroller through the Debug Access Port (DAP), typically using JTAG protocol for comprehensive access or serial UART as an alternative. The debug interface provides non-intrusive access to processor internals: direct memory reads and writes, register inspection and modification, execution control (halt, resume, step), hardware breakpoint configuration, and trace data collection.
+
+The injector verifies hardware connectivity and readiness before proceeding with fault injection. This verification includes checking that debug interface responds correctly, confirming target processor is executing, validating that target software is loaded and running, and ensuring no prior faults or crashes prevent testing.
+
+During test execution, the injector uses debug interface commands to inject faults at specified times. For memory bit flips on physical hardware, the process involves: waiting until the specified injection time (measured from test start or triggered by program execution reaching a specific point), halting processor execution temporarily, reading current memory contents at the target address, flipping the specified bit(s), writing modified value back to physical memory, verifying the write succeeded through readback, and resuming processor execution.
+
+For sensor corruption on bare-metal hardware, the injector identifies memory-mapped peripheral registers or memory buffers where sensor data resides, halts execution briefly, modifies sensor data to inject the configured fault (stuck value, out-of-range, noise), and resumes execution. The target software reads corrupted sensor data as if a real sensor malfunctioned.
+
+Monitoring physical hardware behavior uses embedded debugging and trace capabilities built into modern microcontrollers. ARM Cortex-M4 (Tiva-C) provides Embedded Trace Macrocell (ETM) for instruction-level tracing, Data Watchpoint and Trace (DWT) for data access monitoring, and Instrumentation Trace Macrocell (ITM) for software-generated trace messages. TriCore AURIX (semester two) provides even more extensive debugging features including Multi-Core Debug Solution (MCDS), on-chip trace memory, and safety mechanism monitors.
+
+The injector captures this monitoring data throughout the test: instruction traces showing execution flow changes, memory access logs revealing fault propagation, exception and interrupt activity indicating fault detection, timing measurements from hardware timers, and any trace messages from embedded software.
+
+Upon completion, the injector disconnects from hardware gracefully, aggregates captured data into results JSON, and returns control to the orchestrator for reporting.
+
+***4.1.3.3 Advantages of Bare-Metal Approach: ***
+
+Realistic validation: Testing occurs on actual hardware under real operating conditions. Accurate timing: Real-time execution matches production timing exactly. True hardware behavior: Physical peripherals and sensors behave authentically. Environmental effects: External factors (temperature, EMI, power variations) affect results realistically. Certification evidence: Hardware test results provide stronger evidence for safety certification.
+
+***4.1.3.4 Limitations of Bare-Metal Approach:****** ***
+
+Hardware dependencies: Testing requires physical hardware availability. Slower iteration: Realtime execution and hardware setup increase test duration. Limited observability: Hardware debugging has less visibility than emulation. Potential hardware damage: Aggressive testing could theoretically damage hardware (though safeguards prevent this). Single execution at a time: One test runs per hardware unit, limiting parallelism.
+
+** **
+
+##### 4.1.4 Technology Stack
+
+**Common Technologies (Both Modes): **
+
+- Bash 5.0+: Orchestrator shell scripting
+
+- Whiptail: Terminal user interface dialogs
+
+- JSON: Configuration and results data format
+
+- C/C++: Fault injector implementation
+
+- cJSON: JSON parsing library
+
+- Git: Version control
+
+**Emulation-Specific Technologies: **
+
+- QEMU: Quick Emulator for ARM and TriCore architectures
+
+- QEMU Monitor Protocol: Programmatic VM control
+
+- GDB Remote Serial Protocol: Debugging interface
+
+- QEMU trace facilities: Execution and memory tracing
+
+**Bare-Metal-Specific Technologies: **
+
+- OpenOCD or similar: JTAG interface software for Tiva-C
+
+- Infineon tools: TriCore debugging tools (semester two)
+
+- JTAG hardware: Physical debug probe
+
+- Serial terminal: UART communication utilities
+
+- Hardware-specific debugging APIs: Cortex-M4 and TriCore debug features
+
+##### 4.1.5 System Architecture Summary
+
+The fault injection framework architecture supports two complementary approaches: emulationbased testing using QEMU for rapid iteration and development, and bare-metal testing on physical hardware for realistic validation. The orchestrator provides consistent terminal-based interaction regardless of mode. The fault injector adapts to target type while maintaining unified configuration and results formats. This dual-mode architecture optimizes development workflows, enables progressive testing strategies, and provides resource flexibility while maintaining test portability between emulation and hardware. First-semester focus on emulation establishes the foundation; second-semester expansion to TriCore hardware completes the vision of comprehensive automotive embedded systems fault injection testing.
+
+#### 4.2 Orchestrator Component Design
+
+The orchestrator serves as the primary user interface and control center for the fault injection framework. Implemented as a Bash script with Whiptail terminal user interface (TUI) components, the orchestrator guides users through test configuration, manages fault injector execution, and presents results in an accessible format. The orchestrator design prioritizes ease of use, requiring no specialized knowledge beyond basic terminal navigation.
+
+##### 4.2.1 Purpose and Responsibilities
+
+The orchestrator fulfills several critical roles within the framework architecture:
+
+###### 4.2.1.1 User Interaction Management
+
+Present intuitive menus for navigating framework capabilities. Collect fault injection parameters through guided dialogs. Validate user inputs immediately with clear feedback. Provide contextsensitive help at each configuration step. Handle user errors gracefully without crashes or data loss.
+
+###### 4.2.1.2 Configuration Generation
+
+Translate user inputs into structured JSON configuration files. Ensure configuration completeness with all required parameters. Validate configuration consistency (e.g., timing parameters make logical sense). Generate unique test identifiers tracking. Store configurations for potential reuse.
+
+###### 4.2.1.3 Test Execution Control
+
+Invoke the appropriate fault injector based on selected mode (emulation or bare-metal). Pass configuration to the injector correctly. Monitor injector execution progress. Handle injector failures or timeouts. Provide user feedback during long-running tests.
+
+###### 4.2.1.4 Result Presentation
+
+Parse JSON result files returned by the injector. Extract key information for user consumption. Format results for terminal display with appropriate emphasis. Generate summary statistics across multiple tests. Archive results with associated configurations for traceability.
+
+###### 4.2.1.5 Mode Management
+
+Detect available testing modes (emulation vs. hardware). Guide users to appropriate mode based on hardware availability. Handle mode-specific configuration parameters. Adapt workflow based on selected mode without confusing users.
+
+The orchestrator operates as a state machine, moving users through logical workflow stages:
+
+mode selection → fault configuration → execution → result viewing. At any point, users can return to previous stages, access help, or exit gracefully with work saved.
+
+##### 4.2.2 Terminal User Interface (TUI) Design
+
+The terminal user interface leverages Whiptail, a lightweight dialog library that provides interactive elements within the terminal environment. Whiptail was selected for several practical reasons: it requires no installation on most Linux distributions, provides adequate UI components for our needs without complexity, integrates naturally with Bash scripting, operates efficiently with minimal resource consumption, and maintains consistent appearance across different terminal emulators.
+
+###### 4.2.2.1 Whiptail Dialog Components Used
+
+Input Boxes:
+
+Collect text input from users with prompt and validation. Display default values  when appropriate. Validate format (e.g., hexadecimal addresses) before accepting.  Example: memory address entry, sensor identifier input.
+
+Radio Lists:
+
+Present mutually exclusive options where exactly one must be selected. Clearer  than menu dialogs for binary or few choices. Example: stuck-at-zero vs.  stuck-at-max vs. out-of-range for sensor corruption mode.
+
+Message Boxes:
+
+Display information, warnings, or errors to users. Require acknowledgment before  proceeding. Used for error messages, help text, and status updates. Example:
+
+"Configuration saved successfully" confirmation.
+
+###### 4.2.2.2 UI Design Principles Applied
+
+Consistency: All dialogs follow similar layout and navigation patterns. Users  learn once and apply knowledge throughout.
+
+Clear Labels: Every input has descriptive text explaining what is needed and why.
+
+Technical jargon is minimized or explained.
+
+Escape Routes: Users can cancel at any point.
+
+#### 4.3 Fault Injector Design
+
+The fault injector is the core component that performs the actual fault injection into target systems. It supports two operating modes: emulation-based using QEMU, and bare-metal using physical hardware.
+
+##### 4.3.1 Injector Architecture Overview
+
+The injector consists of three main parts:
+
+Common Core: Handles JSON configuration parsing, timing control, and result generation. This logic is shared between both modes.
+
+Emulation Backend: Manages QEMU sessions and injects faults into the virtual machine.
+
+Bare-Metal Backend: Communicates with physical hardware via JTAG or serial interfaces to inject faults.
+
+The injector accepts a JSON configuration file as input, determines which mode to use, executes the fault injection according to timing specifications, monitors the system response, and generates a JSON results file.
+
+##### 4.3.2 Emulation-Based Injector (QEMU Mode)
+
+In emulation mode, the injector launches a QEMU virtual machine running the embedded system software. QEMU provides interfaces for controlling the virtual machine and accessing its internal state.
+
+QEMU Session Management:
+
+The injector starts QEMU with the target firmware image, configures it for the appropriate architecture (ARM Cortex-M4 or TriCore), and establishes a connection to QEMU's monitor interface for sending commands.
+
+Fault Injection via QEMU:
+
+For memory bit flips, the injector pauses the virtual machine, reads the target memory location, flips the specified bit, writes the modified value back, and resumes execution.
+
+For sensor corruption, the injector modifies memory locations or registers that represent sensor data, replacing valid values with fault-injected values (stuck-at, out-of-range, or noisy).
+
+Monitoring:
+
+The injector captures serial output from the virtual machine and uses QEMU's tracing facilities to observe system behavior. Fault detection is confirmed by recognizing specific messages or patterns in the output.
+
+##### 4.3.3 Bare-Metal Injector (Hardware Mode)
+
+In bare-metal mode, the injector connects to physical embedded hardware (Tiva-C microcontroller) through debug interfaces.
+
+Hardware Connection:
+
+The injector uses JTAG (via OpenOCD software) or serial UART to establish communication with the target hardware. JTAG provides comprehensive access to memory and processor state. Serial requires firmware cooperation but works with simpler equipment.
+
+Fault Injection on Hardware:
+
+For memory bit flips, the injector halts the processor, reads the target memory address, flips the specified bit, writes the new value, verifies the write succeeded, and resumes execution.
+
+For sensor corruption, the injector modifies memory-mapped sensor data locations while the processor is briefly halted, then resumes execution with the corrupted values in place.
+
+Monitoring:
+
+The injector captures serial output from the hardware and can use hardware breakpoints to detect when fault detection code executes. ARM Cortex-M4 debugging features provide trace capabilities for observing system response.
+
+##### 4.3.4 Common Injector Logic
+
+***4.3.4.1 Configuration Parsing: ***
+
+The injector reads JSON configuration files, extracts fault parameters (type,  location, timing, duration), validates the configuration, and prepares for execution.
+
+***4.3.4.2 Timing Control: ***
+
+The injector waits until the specified injection time, then triggers the fault. For emulation, timing is approximate. For hardware, timing is more precise but still subject to execution variations.
+
+***4.3.4.3 Fault Execution:****** ***
+
+Based on fault type, the injector calls either memory bit flip or sensor corruption functions. The mode (emulation vs. bare-metal) determines which backend handles the actual injection.
+
+***4.3.4.4 Result Collection: ***
+
+The injector records whether the fault was successfully injected, whether the system detected the fault, how the system responded, timing measurements, and any errors encountered.
+
+***4.3.4.5 Result Generation:****** ***
+
+After test completion, the injector aggregates captured data into a JSON results file containing test identification, injection confirmation, detection status, system response description, timing measurements, and pass/fail determination based on expected behavior.
+
+##### 4.3.5 Fault Type Implementations
+
+***4.3.5.1 Memory Bit Flip: ***
+
+Targets a specific memory address and bit position. Simulates cosmic ray strikes or electromagnetic interference causing random bit changes. The injector reads the current value, XORs with a bit mask to flip the target bit, writes the modified value, and verifies the change occurred.
+
+***4.3.5.2 Sensor Data Corruption: ***
+
+Targets sensor data locations identified by sensor ID. Supports multiple corruption modes: stuckat-zero (sensor always reports 0), stuck-at-max (sensor reports maximum value), out-of-range (sensor reports impossible value specified in config), and noisy signal (adds random variations to sensor readings).
+
+** **
+
+##### 4.3.6 Implementation Considerations
+
+The injector is implemented in C/C++ for performance and direct hardware access. It uses the cJSON library for JSON parsing, standard POSIX APIs for timing and file operations, and modespecific libraries (QEMU interfaces for emulation, OpenOCD for JTAG hardware access).
+
+Error handling is comprehensive: all operations check for failures and report them clearly. If fault injection fails, the test aborts with an error message rather than proceeding with invalid state.
+
+Logging provides detailed traces of injector operations for debugging purposes. Log verbosity can be adjusted based on needs.
+
+The injector is designed to be extended in the future with additional fault types, support for different hardware platforms, and enhanced monitoring capabilities.
+
+#### 4.4 Communication and Data Flow
+
+The fault injection framework relies on clear communication pathways between  components and well-defined data structures exchanged throughout the testing  workflow.
+
+##### 4.4.1 Overall Data Flow
+
+The testing workflow follows a linear progression through distinct stages:
+
+User
+
+Orchestrator
+
+Orchestrator
+
+Target System
+
+Fault Injector
+
+User
+
+	####                                                                                                   Collects Parameters
+
+ Executes Injection
+
+ QEMU or Hardware
+
+Displays Results
+
+Each transition point uses standardized JSON format for data exchange.
+
+##### 4.4.2 Configuration Flow
+
+The orchestrator collects fault injection parameters through interactive terminal dialogs and generates a structured JSON configuration file.
+
+The user selects the operating mode, fault type, and provides fault-specific parameters. For memory bit flips, this includes target address and bit position. For sensor corruption, this includes sensor identifier, corruption mode, and fault values. The user also specifies timing parameters and expected system behavior.
+
+The orchestrator validates all inputs for proper formats, reasonable ranges, and logical consistency. Upon validation, it generates a JSON configuration file with a unique test identifier and timestamp, saving it to a configuration directory.
+
+The orchestrator launches the fault injector as a separate process, passing the configuration file path as a command-line argument. This file-based handoff decouples the orchestrator from the injector.
+
+##### 4.4.3 Execution Flow
+
+The fault injector reads the configuration file, establishes connection to the target system, and executes the fault injection.
+
+The injector parses the JSON configuration to extract test parameters. Based on the specified mode, it initializes the appropriate backend. For emulation, this involves launching QEMU with the target firmware. For bare-metal, this involves connecting to hardware via JTAG or serial interface.
+
+The injector waits until the specified injection time, then pauses target execution to safely modify system state. For memory bit flips, it reads current memory, modifies the specified bit, writes the new value, and verifies success. For sensor corruption, it modifies sensor data locations with fault values.
+
+After injection, the injector resumes target execution and monitors system behavior, capturing serial output, execution traces, and fault detection indicators. The test concludes when the fault duration expires.
+
+In emulation mode, the injector communicates with QEMU through its monitor interface. In baremetal mode, it sends commands through debug interfaces using JTAG or serial protocols.
+
+##### 4.4.4 Results Flow
+
+After execution, the injector aggregates captured data into a results JSON file.
+
+The injector collects monitoring data including injection confirmation, fault detection status, system response descriptions, timing measurements, and any unexpected behaviors. It compares observed behavior with expected behavior from the configuration and determines pass/fail status.
+
+The results file is written to a results directory with a filename linked to the test identifier. The injector then terminates, returning control to the orchestrator.
+
+The orchestrator detects injector completion, reads the results file, parses the JSON content, and formats information for terminal display with appropriate highlighting for pass/fail status and detection confirmation.
+
+##### 4.4.5 JSON Data Structures
+
+All data exchange uses JSON format for consistency and ease of parsing.
+
+Configuration files contain test identifier, timestamp, selected mode, fault type, fault-specific parameters, timing specifications, and expected behavior description.
+
+Results files contain matching test identifier, execution timestamp, execution mode, overall status, injection and detection flags, system response description, timing measurements, expected versus actual behavior comparison, pass/fail determination, and additional notes.
+
+This standardized structure ensures components can exchange data without requiring knowledge of internal implementation details.
+
+##### 4.4.6 File-Based Communication
+
+Components communicate through the filesystem using JSON files rather than direct inter-process communication.
+
+This approach provides simplicity through standard file operations, facilitates debugging since files can be inspected manually, enables test configuration reuse, and allows component independence since orchestrator and injector operate as separate processes.
+
+The framework uses standardized directory structure with separate locations for configuration files, result files, and firmware images. File naming follows consistent patterns linking configurations to results through test identifiers.
+
+##### 4.4.7 Communication Coordination
+
+The orchestrator and injector coordinate through process control and file existence rather than active communication.
+
+For test initiation, the orchestrator generates the complete configuration file before launching the injector process with the file path as argument. The injector reads the configuration and proceeds with execution while the orchestrator waits for process completion.
+
+For test completion, the injector writes results before terminating with an exit code indicating success or failure. The orchestrator detects termination, checks the exit code, reads the results file, and presents information to the user.
+
+This coordination model ensures data is captured even if the injector encounters problems, as long as it can write results before terminating.
+
+##### 4.4.8 Mode-Specific Communication
+
+While high-level data flow remains consistent, communication mechanisms between injector and target differ by mode.
+
+In emulation mode, all communication occurs between software processes on the same host computer. The injector sends commands to QEMU through sockets with text responses. This is fast and reliable with no physical connections.
+
+In bare-metal mode, communication traverses physical connections. JTAG commands flow through debugging tools translating to protocol signals over cables. Serial communication transmits over UART at configured baud rates. These introduce timing delays that the injector accounts for when coordinating injection.
+
+Despite these differences, the injector abstracts communication details, presenting consistent interfaces through standard JSON files.
+
+##### 4.4.9 Communication Flow Summary
+
+The framework's communication architecture prioritizes simplicity and component independence. User inputs transform into JSON configurations that pass to the injector through file arguments. The injector executes independently, communicating with emulated or physical targets. Results aggregate into JSON files that the orchestrator formats for presentation.
+
+All intermediate data persists in human-readable format, facilitating debugging and test reproducibility. File-based communication avoids complex inter-process coordination while maintaining clear separation between interface, execution logic, and target interaction. This design supports accessibility, maintainability, and future extensibility.
+
+##### 4.5 Design Decisions and Justifications
+
+This section explains the key design decisions made during framework development, the alternatives considered, and the rationale behind final choices. Understanding these decisions provides insight into the framework's architecture and helps justify the approach taken.
+
+**4.5.1 Why Two Injection Modes? **
+
+Decision: Support both emulation-based (QEMU) and bare-metal (hardware) fault injection in a single framework.
+
+Alternatives Considered:
+
+Emulation-only approach would be simpler to implement and require no hardware. Hardware-only approach would provide realistic validation but slow development iteration. Building separate frameworks for each mode would avoid architectural complexity.
+
+Rationale:
+
+The dual-mode approach balances development speed with validation realism. Emulation enables rapid testing and debugging during development without hardware dependencies. Hardware validation ensures results reflect real-world behavior critical for safety applications. Using identical configurations across both modes enables progressive testing: develop and debug in emulation, validate on hardware. This workflow optimizes both development efficiency and result confidence.
+
+**4.5.2 Why QEMU for Emulation? **
+
+Decision: Use QEMU as the emulation platform for software-based fault injection.
+
+Alternatives Considered:
+
+Custom simulator built specifically for the project would provide complete control. Other emulators like Renode or gem5 offer different features. Pure software simulation without processor emulation would be simpler but less realistic.
+
+Rationale:
+
+QEMU is mature, well-documented, and widely used in embedded systems development.
+
+It supports both ARM Cortex-M4 (Tiva-C) and TriCore architectures needed for semester progression. QEMU provides comprehensive debugging interfaces including monitor commands and GDB protocol support. The active development community ensures ongoing support and bug fixes. QEMU is freely available and open-source, aligning with project accessibility goals.
+
+**.3 Why Bash + Whiptail for Orchestrator? **
+
+Decision: Implement the orchestrator as a Bash script using Whiptail for terminal user interface.
+
+Alternatives Considered:
+
+Python with curses or similar TUI library would provide more sophisticated interface capabilities. C/C++ with ncurses would integrate better with the injector. Graphical user interface using GTK or Qt would be more modern and user-friendly.
+
+Rationale:
+
+Bash is universally available on Linux systems without additional installation. Whiptail is a standard component on most distributions, requiring no dependencies. The team has existing Bash scripting experience, reducing learning curve. Bash excels at process orchestration and file manipulation, the orchestrator's primary responsibilities. Terminal-based interface works identically on desktop and remote systems accessed via SSH. Lightweight implementation keeps the framework accessible on resource-constrained systems.
+
+**4.5.4 Why C/C++ for Fault Injector?**** **
+
+Decision: Implement the fault injector in C/C++ rather than higher-level languages.
+
+Alternatives Considered:
+
+Python would simplify development with extensive libraries and easier debugging. Rust would provide memory safety guarantees. Java or C# would offer robust frameworks and automatic memory management.
+
+Rationale:
+
+C/C++ provides direct access to low-level operations necessary for hardware communication. Performance is critical when injecting faults with precise timing requirements. C/C++ integrates naturally with hardware debugging tools and protocols like JTAG. The language is standard for embedded systems, making the code familiar to the target audience. Minimal runtime overhead ensures fault injection doesn't significantly perturb system timing.
+
+** **
+
+**.5 Why JSON for Configuration?**** **
+
+Decision: Use JSON format for configuration and results files.
+
+Alternatives Considered:
+
+XML would provide more structured schema validation. YAML is more human-readable with less syntax overhead. INI files would be simpler for basic key-value pairs. Binary formats would be more efficient. Custom text format could be optimized for specific needs.
+
+Rationale:
+
+JSON balances human readability with machine parseability. Lightweight syntax reduces file size without sacrificing clarity. Extensive library support exists across all languages used in the framework. JSON is widely understood by developers, reducing learning curve. Structure naturally represents nested configuration parameters. Standard format enables integration with external tools for analysis.
+
+**4.5.6 Why File-Based Communication? **
+
+Decision: Use JSON files for inter-component communication rather than sockets, pipes, or shared memory.
+
+Alternatives Considered:
+
+Unix domain sockets would enable real-time communication. Named pipes would provide streaming data transfer. Shared memory would minimize communication overhead. Direct function calls through shared libraries would eliminate serialization.
+
+Rationale:
+
+File-based communication is simple to implement and debug. No complex synchronization or protocol negotiation required. Configuration and results persist automatically for later analysis. Components operate completely independently without runtime coupling. Easy to inspect data at any stage using standard text editors. Enables test configuration reuse and manual modification. Works identically across different systems and environments.
+
+**.7 Why Tiva-C for First Semester? **
+
+Decision: Use Texas Instruments Tiva-C microcontroller for initial bare-metal development rather than immediately targeting TriCore AURIX.
+
+Alternatives Considered:
+
+Starting directly with TriCore AURIX would focus on the ultimate automotive target. Using Arduino or Raspberry Pi would provide even easier initial development. Generic ARM development boards would offer more flexibility.
+
+Rationale:
+
+Tiva-C provides adequate complexity to demonstrate fault injection concepts without overwhelming automotive-specific features. ARM Cortex-M4 architecture is well-documented and widely understood. Debugging tools and community support are extensive. Hardware is readily available and affordable for academic projects. Tiva-C represents a stepping stone to more complex automotive hardware, allowing skill building before tackling TriCore complexity.
+
+###### 4.5.8 Design Decisions Summary
+
+The framework's architecture reflects pragmatic choices balancing competing concerns. The dualmode architecture prioritizes both development speed and validation realism through a progressive testing workflow. Terminal interface and standard tools prioritize accessibility over advanced features. C/C++ for the injector provides necessary performance while Bash orchestrator simplifies user interaction. File-based communication enables component independence and simplicity. TivaC focus addresses first-semester constraints while maintaining a clear path to automotive hardware.
+
+These decisions collectively create a framework that is practical to develop within academic constraints, accessible to users without specialized resources, and extensible toward more sophisticated automotive testing in future work. Together they form a coherent architecture aligned with project goals and realistic about available time, expertise, and resources.
+
+** **
+
+##### 4.6 Summary
+
+This chapter presented the complete technical design of the fault injection framework, covering architecture, components, communication, and design decisions.
+
+The framework employs a three-component architecture supporting two distinct operating modes. The orchestrator provides terminal-based user interaction through Bash and Whiptail, guiding users through fault injection configuration and presenting test results. The fault injector implements core injection logic in C/C++, with separate backends for emulation-based testing using QEMU and bare-metal testing on Tiva-C hardware. Target systems range from QEMU virtual machines emulating embedded processors to physical microcontroller hardware accessed via JTAG or serial interfaces.
+
+Communication between components uses file-based JSON exchange rather than complex interprocess protocols. Configuration files flow from orchestrator to injector, carrying fault specifications, timing parameters, and expected behavior. Results files return from injector to orchestrator, containing injection confirmation, fault detection status, system responses, and timing measurements. This approach prioritizes simplicity, debuggability, and component independence.
+
+The dual-mode architecture enables progressive testing workflows. Development and initial validation occur in fast, accessible QEMU emulation without hardware dependencies. Final validation proceeds on physical Tiva-C hardware providing realistic timing and behavior. Identical JSON configurations work across both modes, ensuring test portability and reproducibility.
+
+Key design decisions reflect practical constraints and project goals. QEMU was selected for emulation due to maturity, architecture support, and comprehensive debugging interfaces. Bash and Whiptail provide the orchestrator interface for universal availability and minimal dependencies. C/C++ implements the injector for performance and hardware access requirements. JSON handles data exchange for readability and tool compatibility. File-based communication simplifies component interaction and enables independent development. Tiva-C serves as the initial hardware platform for accessibility and manageable complexity before advancing to TriCore AURIX in future work.
+
+The framework supports two fundamental fault types essential for automotive safety validation. Memory bit flip injection simulates cosmic ray strikes and electromagnetic interference by modifying specific bits at target addresses. Sensor corruption injection simulates sensor malfunctions through stuck values, out-of-range readings, and noisy signals. Both fault types inject at precise timing points and maintain configurable durations, enabling realistic failure scenario testing.
+
+This technical design establishes a solid foundation for implementation. The modular architecture supports independent component development and testing. Clear interfaces between layers enable parallel work by team members. The progressive complexity from orchestrator through injector to target system matches team skill development over the semester. Extensibility is built into the architecture, accommodating future enhancements including additional fault types, automation capabilities, and TriCore AURIX integration.
+
+The design balances multiple competing priorities: accessibility versus sophistication, development speed versus validation realism, simplicity versus flexibility. These balances reflect realistic assessment of available time, team expertise, and project resources while maintaining alignment with the goal of creating a functional, useful fault injection framework for embedded automotive systems testing.
