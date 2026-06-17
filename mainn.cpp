@@ -13,7 +13,7 @@
 #define RESULT_JSON_PATH        "./campaign_result.json"
 #define QEMU_ELF_PATH           "./Cruise_Control/Qemu/Corrected/"
 #define HARDWARE_ELF_PATH       "./Cruise_Control/Hardware/Corrected/"
-#define PLUGIN_PATH             "./Qemu_Plugin/fault_plugin.c"  
+#define PLUGIN_PATH             "./Qemu_Plugin/fault_plugin.so"  
 
 #include "FaultConfig.h"
 #include "QemuSession.h"
@@ -181,16 +181,26 @@ static FaultDescriptor parseFaultDescriptor(
 
 // ── JSON → QemuSessionConfig ──────────────────────────────────────────────────
 
-static QemuSessionConfig parseSessionConfig(const json& j) {
+static QemuSessionConfig parseSessionConfig(const json& j ) {
     const auto& meta = j["meta"];
 
     QemuSessionConfig cfg;
-    cfg.firmware    = meta.at("firmware")   .get<std::string>();
     cfg.pluginPath  = PLUGIN_PATH ;
     cfg.machine     = meta.value("machine",     std::string("lm3s6965evb"));
     cfg.cpu         = meta.value("cpu",         std::string("cortex-m4 "));
     cfg.serverPort  = meta.value("server_port", 9001);
     cfg.timeoutSecs = meta.value("timeout_secs", 30);
+    cfg.firmware =
+    QEMU_ELF_PATH + meta.at("firmware").get<std::string>();
+
+    printf("[INFO] QEMU session config:\n");
+    printf("  firmware    : %s\n", cfg.firmware.c_str());
+    printf("  pluginPath  : %s\n", cfg.pluginPath.c_str());
+    printf("  machine     : %s\n", cfg.machine.c_str());
+    printf("  cpu         : %s\n", cfg.cpu.c_str());
+    printf("  serverPort  : %d\n", cfg.serverPort);
+    printf("  timeoutSecs : %d\n", cfg.timeoutSecs);
+
     return cfg;
 
 }
@@ -274,11 +284,15 @@ int main(int argc ,char* argv[]){
         return 1;
     }
 
+    // Clear previous campaign result
+    std::ofstream(resultFile, std::ios::trunc).close();
+
     json campaignResult;
     campaignResult["meta"] = config["meta"];
     campaignResult["faults"] = json::array();
 
     std::string mode = config["meta"]["mode"].get<std::string>();
+    std::cout << "[main] Running in mode: " << mode << '\n';
 
     // Prepare session configuration for QEMU if needed
     std::unique_ptr<QemuSessionConfig> sessionCfgPtr;
@@ -308,7 +322,7 @@ int main(int argc ,char* argv[]){
 
         switch (static_cast<FaultType>(desc.fault_type)) {
         case FAULT_MEMORY_CORRUPTION: result = session->memoryCorruptionTest(desc); break;
-        case FAULT_INSTRUCTION_SKIP:  result = session->instructionSkipTest(desc);  break;
+        case FAULT_INSTRUCTION_SKIP:  result = session->Task_delay(desc);           break;
         case FAULT_BIT_FLIP:          result = session->bitFlipTest(desc);          break;
         case FAULT_SET_PC:            result = session->setPC(desc);                break;
         case FAULT_SENSOR_CORRUPTION: result = session->sensorCorruptionTest(desc); break;
@@ -325,5 +339,6 @@ int main(int argc ,char* argv[]){
         
 
         session->stop();
+    }
     return 0;
 }

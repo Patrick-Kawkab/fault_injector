@@ -1,16 +1,40 @@
 {
     "faults": [
         {
-            "Firmware": "tiva_led.elf",
-            "Mode": "HARDWARE",
-            "Target": "ARM",
-            "address": "0x20000008",
             "fault_type": "memory_corruption",
             "id": 1,
-            "max": 2,
-            "min": 0,
-            "result": "FAILED",
-            "value": 255
+            "max": 255,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "sim_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 2,
+            "max": 255,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "sim_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 3,
+            "max": 255,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "sim_rpm"
         }
-    ]
+    ],
+    "meta": {
+        "asil_level": "ASIL-D",
+        "cpu": "cortex-m4",
+        "firmware": "main_fault_test.elf",
+        "machine": "lm3s6965evb",
+        "mode": "qemu",
+        "port": 9001,
+        "target": "ARM"
+    }
 }

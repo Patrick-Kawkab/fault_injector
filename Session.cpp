@@ -5,7 +5,7 @@
 #include<stdexcept>
 
 
-std::unique_ptr<Session> Session::create(const std::string& type ,  const QemuSessionConfig* qemuCfg = nullptr){
+std::unique_ptr<Session> Session::create(const std::string& type ,  const QemuSessionConfig* qemuCfg){
     if(type == "qemu")
     {
         if(qemuCfg == nullptr)

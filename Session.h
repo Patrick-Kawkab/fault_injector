@@ -11,6 +11,8 @@
 #include <sys/wait.h>
 #include "FaultConfig.h"
 
+struct QemuSessionConfig;
+
 class Session {
 public:
     virtual ~Session()= default;

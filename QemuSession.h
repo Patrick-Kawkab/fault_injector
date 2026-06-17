@@ -45,7 +45,7 @@ public:
     // ── Fault methods — all delegate to runCampaign ──────────────────────────
     FaultResult memoryCorruptionTest(const FaultDescriptor& desc) override;
     FaultResult bitFlipTest         (const FaultDescriptor& desc) override;
-    FaultResult instructionSkipTest (const FaultDescriptor& desc) override;
+    FaultResult Task_delay (const FaultDescriptor& desc) override;
     FaultResult sensorCorruptionTest(const FaultDescriptor& desc) override;
     FaultResult setPC               (const FaultDescriptor& desc) override;
 

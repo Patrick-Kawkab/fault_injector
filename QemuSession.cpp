@@ -130,6 +130,11 @@ int QEMUSession::stop() noexcept {
         pluginSock_ = -1;
         std::cout << "[QEMUSession] Plugin socket closed\n";
     }
+    if (serverSock_ >= 0) {
+        ::close(serverSock_);
+        serverSock_ = -1;
+        std::cout << "[QEMUSession] Server socket closed\n";
+    }
     return 0;
 }
 
@@ -145,7 +150,7 @@ FaultResult QEMUSession::bitFlipTest(const FaultDescriptor& desc) {
     return runCampaign(desc);
 }
 
-FaultResult QEMUSession::instructionSkipTest(const FaultDescriptor& desc) {
+FaultResult QEMUSession::Task_delay(const FaultDescriptor& desc) {
     return runCampaign(desc);
 }
 
