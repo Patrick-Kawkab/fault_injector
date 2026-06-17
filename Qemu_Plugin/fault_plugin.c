@@ -336,31 +336,71 @@ static void do_bit_flip(void)
 
 static void do_sensor_corruption(uint64_t vaddr)
 {
-    fprintf(stderr, "[fault_plugin] mem_access: TRIGGER HIT"
+    // ── Label varies by which trigger path called us ──────────────────────
+    const char *trig_label = (g_fault.trigger == TRIGGER_MEM_ACCESS)
+                             ? "mem_access" : "insn_count";
+ 
+    fprintf(stderr, "[fault_plugin] %s: TRIGGER HIT"
             "  vaddr=0x%08" PRIX64 "  sensor_addr=0x%08X"
             "  insn_count=%" PRIu64 "\n",
-            vaddr, g_fault.sensor_addr, g_insn_count);
-    fprintf(stderr, "[fault_plugin] mem_access: injecting sensor_corruption"
-            "  spoofed_value=0x%02X\n", g_fault.injected_value);
-
-    if (guest_write_u8(g_fault.sensor_addr, g_fault.injected_value)) {
-        uint8_t actual = 0;
-        bool readok = guest_read_u8(g_fault.sensor_addr, &actual);
-        g_injected = true;
-        g_passed   = readok &&
-                     actual >= g_fault.min_expected &&
-                     actual <= g_fault.max_expected;
-        fprintf(stderr, "[fault_plugin] INJECT sensor_corruption: "
-                "wrote 0x%02X to 0x%08" PRIX64 "  readback=0x%02X"
-                "  expected=[0x%02X,0x%02X]  insn=%" PRIu64 "  -> %s\n",
-                g_fault.injected_value, vaddr,
-                actual, g_fault.min_expected, g_fault.max_expected,
-                g_insn_count, g_passed ? "PASSED" : "FAILED");
-    } else {
+            trig_label, vaddr, g_fault.sensor_addr, g_insn_count);
+    fprintf(stderr, "[fault_plugin] %s: injecting sensor_corruption"
+            "  sensor_addr=0x%08X  spoofed_value=0x%02X\n",
+            trig_label, g_fault.sensor_addr, g_fault.injected_value);
+ 
+    if (!guest_write_u8(g_fault.sensor_addr, g_fault.injected_value)) {
         fprintf(stderr, "[fault_plugin] INJECT sensor_corruption FAILED:"
                 " write error at 0x%08X\n", g_fault.sensor_addr);
+        return;
+    }
+ 
+    g_injected = true;
+    fprintf(stderr, "[fault_plugin] INJECT sensor_corruption:"
+            " wrote 0x%02X to 0x%08X  insn=%" PRIu64 "\n",
+            g_fault.injected_value, g_fault.sensor_addr, g_insn_count);
+ 
+    if (g_fault.trigger == TRIGGER_INSN_COUNT) {
+        // ── Behavioural observe mode ─────────────────────────────────────
+        // Goal: verify firmware cancels cruise when current_rpm stays 0.
+        // vEncoderTask increments zero_rpm_count each 100ms sample; after 30
+        // consecutive zero samples (~3 s) it sets cruise_state = STATE_OFF.
+        // We must keep re-pinning sensor_addr (current_rpm) to 0 on every
+        // observe poll so the simulated RPM cannot drift back up.
+        // Pass condition: inject_addr (cruise_state) == STATE_OFF == 0.
+        if (g_fault.observe_window != 0) {
+            g_observe_mode  = true;
+            g_observe_until = g_insn_count + g_fault.observe_window;
+            fprintf(stderr,
+                    "[fault_plugin] OBSERVE STARTED (sensor_corruption behavioural)\n"
+                    "  sensor_addr=0x%08X  held at injected_value=0x%02X every poll\n"
+                    "  watching inject_addr=0x%08X for STATE_OFF range [0x%02X..0x%02X]\n"
+                    "  current_insn=%" PRIu64 "  observe_window=%" PRIu64
+                    "  observe_until=%" PRIu64 "\n",
+                    g_fault.sensor_addr, g_fault.injected_value,
+                    g_fault.inject_addr,
+                    g_fault.min_expected, g_fault.max_expected,
+                    g_insn_count, g_fault.observe_window, g_observe_until);
+        } else {
+            // No observation window — write success alone counts as pass
+            g_passed = true;
+            fprintf(stderr, "[fault_plugin] sensor_corruption: no observe_window"
+                    " — marking PASSED on successful write\n");
+        }
+    } else {
+        // ── mem_access path: immediate readback evaluation (original logic) ──
+        uint8_t actual = 0;
+        bool readok = guest_read_u8(g_fault.sensor_addr, &actual);
+        g_passed = readok &&
+                   actual >= g_fault.min_expected &&
+                   actual <= g_fault.max_expected;
+        fprintf(stderr, "[fault_plugin] INJECT sensor_corruption: "
+                "readback=0x%02X  expected=[0x%02X,0x%02X]  insn=%" PRIu64
+                "  -> %s\n",
+                actual, g_fault.min_expected, g_fault.max_expected,
+                g_insn_count, g_passed ? "PASSED" : "FAILED");
     }
 }
+ 
 
 static void do_set_pc(void)
 {
@@ -534,6 +574,7 @@ static void vcpu_insn_exec_cb(unsigned int vcpu_idx, void *userdata)
                 if      (g_fault.fault_type == FAULT_MEMORY_CORRUPTION) do_memory_corruption();
                 else if (g_fault.fault_type == FAULT_BIT_FLIP)          do_bit_flip();
                 else if (g_fault.fault_type == FAULT_SET_PC)            do_set_pc();
+                else if (g_fault.fault_type == FAULT_SENSOR_CORRUPTION) do_sensor_corruption((uint64_t)g_fault.sensor_addr);
             }
             break;
         default:
@@ -542,38 +583,52 @@ static void vcpu_insn_exec_cb(unsigned int vcpu_idx, void *userdata)
         return;
     }
 
-    // ── Post-injection: passive observation only ──────────────────────────
-    // No writes — just watch sensor_addr for expected reaction
+   // ── Post-injection: observation loop ─────────────────────────────────────
     if (!g_observe_mode || g_passed || g_result_sent) return;
 
-    // Poll every 50k instructions — watch inject_addr for firmware recovery
-    if (g_insn_count % 50000 != 0) return;
+    if (g_insn_count % 100 != 0) return;
+
+    // sensor_corruption: re-pin current_rpm = 0 on every poll tick.
+    // The simulated RPM keeps incrementing in vEncoderTask; we hold it at 0
+    // so zero_rpm_count accumulates all 30 consecutive samples (~3 s) without
+    // being reset. inject_addr (cruise_state) is what we watch for the result.
+    if (g_fault.fault_type == FAULT_SENSOR_CORRUPTION) {
+        // current_rpm is uint32_t — must zero all 4 bytes or the firmware's
+        // full 32-bit STR will overwrite our single-byte write
+        bool pin_ok = guest_write_u8(g_fault.sensor_addr,     0x00) &&
+                      guest_write_u8(g_fault.sensor_addr + 1, 0x00) &&
+                      guest_write_u8(g_fault.sensor_addr + 2, 0x00) &&
+                      guest_write_u8(g_fault.sensor_addr + 3, 0x00);
+        if (!pin_ok) {
+            fprintf(stderr, "[fault_plugin] OBSERVE re-pin FAILED at 0x%08X\n",
+                    g_fault.sensor_addr);
+        }
+        uint8_t rpm_check = 0;
+        guest_read_u8(g_fault.sensor_addr, &rpm_check);
+        /*fprintf(stderr, "[fault_plugin] OBSERVE re-pin check: sensor_addr=0x%08X  current_rpm=0x%02X\n",
+                g_fault.sensor_addr, rpm_check);ll*/
+    }   
 
     uint8_t val = 0;
-    if (!guest_read_u8(g_fault.inject_addr, &val)) return;  // ← inject_addr not sensor_addr
+    if (!guest_read_u8(g_fault.inject_addr, &val)) return;
 
-    fprintf(stderr, "[fault_plugin] OBSERVE insn=%" PRIu64
-            "  inject_addr=0x%08X  val=0x%02X"
-            "  expected=[0x%02X,0x%02X]\n",
+    /*fprintf(stderr, "[fault_plugin] OBSERVE insn=%" PRIu64
+            "  inject_addr=0x%08X  val=0x%02X  expected=[0x%02X,0x%02X]\n",
             g_insn_count, g_fault.inject_addr, val,
-            g_fault.min_expected, g_fault.max_expected);
+            g_fault.min_expected, g_fault.max_expected);ll*/
 
-    // PASS: firmware overwrote the corrupted value with a valid one
     if (val >= g_fault.min_expected && val <= g_fault.max_expected) {
         g_passed       = true;
         g_observe_mode = false;
-        fprintf(stderr, "[fault_plugin] OBSERVE: PASSED —"
-                " firmware recovered the corrupted value\n");
+        fprintf(stderr, "[fault_plugin] OBSERVE: PASSED — firmware responded correctly\n");
         finish_campaign();
         return;
     }
 
-    // Deadline expired → firmware never recovered → FAIL
     if (g_insn_count >= g_observe_until) {
         g_observe_mode = false;
         g_passed       = false;
-        fprintf(stderr, "[fault_plugin] OBSERVE: FAILED —"
-                " firmware did not recover within deadline\n");
+        fprintf(stderr, "[fault_plugin] OBSERVE: FAILED — firmware did not respond within window\n");
         finish_campaign();
     }
 }

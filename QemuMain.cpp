@@ -57,30 +57,53 @@ static const std::unordered_map<TriggerType, std::string> kTriggerNames = {
 
 // ─────────────────────────────────
 
-uint32_t getSystemStateAddress(const std::string& elfPath ,const std::string& address)
+uint32_t getSystemStateAddress(const std::string& elfPath, const std::string& address)
 {
     printf("[INFO] Getting system state address for %s in %s\n", address.c_str(), elfPath.c_str());
-    if(address.empty()) {
-        return 0; // Return 0 if the address string is empty
+    if (address.empty()) {
+        return 0;
     }
-        std::stringstream cmd;
-    cmd << "arm-none-eabi-nm " << elfPath
-        << " | awk '$3==\"" << address << "\" {print $1}'";
 
-    FILE* pipe = popen(cmd.str().c_str(), "r");
+    std::string cmd = "arm-none-eabi-nm " + elfPath + " 2>/dev/null";
+
+    FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
         throw std::runtime_error("Failed to run nm");
     }
 
-    char buffer[64] = {0};
-    if (!fgets(buffer, sizeof(buffer), pipe)) {
-        pclose(pipe);
-        throw std::runtime_error("system_state not found");
+    char line[256] = {0};
+    uint32_t result = 0;
+    bool found = false;
+
+    while (fgets(line, sizeof(line), pipe)) {
+        // Each nm line: "20000030 b sim_rpm.0"
+        char addr_str[64] = {0};
+        char type_str[8]  = {0};
+        char name_str[128] = {0};
+
+        if (sscanf(line, "%63s %7s %127s", addr_str, type_str, name_str) != 3)
+            continue;
+
+        // Match exact name OR name with .N suffix (static locals)
+        std::string sym(name_str);
+        bool exact  = (sym == address);
+        bool suffix = (sym.rfind(address + ".", 0) == 0); // starts with "address."
+
+        if (exact || suffix) {
+            result = static_cast<uint32_t>(std::stoul(addr_str, nullptr, 16));
+            found  = true;
+            printf("[INFO] Resolved %s -> %s -> 0x%08X\n",
+                   address.c_str(), name_str, result);
+            break;
+        }
     }
+
     pclose(pipe);
 
-    // Convert hex string → integer
-    return static_cast<uint32_t>(std::stoul(buffer, nullptr, 16));
+    if (!found)
+        throw std::runtime_error("system_state not found: " + address);
+
+    return result;
 }
 
 // ── JSON → FaultDescriptor ────────────────────────────────────────────────────
@@ -180,6 +203,7 @@ int main(int argc, char* argv[]) {
 
     /* Construct full ELF path */
     std::string elfPath = sessionCfg.firmware;
+
     FaultDescriptor desc = parseFaultDescriptor(input ,elfPath );
 
     // 2. Run session

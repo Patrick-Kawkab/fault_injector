@@ -78,10 +78,10 @@ volatile uint32_t    target_rpm        = 100;       // Desired speed when cruise
 volatile uint32_t    current_rpm       = 0;         // Measured speed from encoder
 volatile uint32_t    encoder_count     = 0;         // Raw pulse count collected by ISR
 volatile uint32_t    zero_rpm_count    = 0;         // Counts consecutive zero-RPM samples during cruise
-#ifdef USE_QEMU_UART
+//#ifdef USE_QEMU_UART
 volatile uint32_t    sim_rpm           = 0;         // Simulated RPM
 volatile uint32_t sim_throttle         = 0;         // 0..100%
-#endif
+//#endif
 volatile uint32_t    encoder_task_kick = 0;         // Heartbeat counter for encoder task
 volatile uint32_t    cruise_task_kick  = 0;         // Heartbeat counter for cruise task
 volatile uint32_t    manual_task_kick  = 0;         // Heartbeat counter for manual task
@@ -393,7 +393,7 @@ void GPIOPortD_Handler(void) {
 void vEncoderTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
 #ifdef USE_QEMU_UART
-    static uint32_t sim_rpm = 0;
+    static volatile uint32_t sim_rpm = 0;
 #endif
 
     while (1) {

@@ -50,6 +50,7 @@ typedef enum {
 // ─────────────────────────────────────────────────────────────────────────────
 typedef struct {
     uint8_t   fault_type;       // FaultType  (use uint8_t for fixed wire size)
+    uint16_t  id;               // explicit padding — keeps layout predictable
     uint8_t   trigger;          // TriggerType
     uint8_t   injected_value;   // value to write  (memory/sensor corruption)
     uint8_t   bit_pos;          // bit index 0-7   (bit_flip)
