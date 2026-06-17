@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "firmware": "tiva_led.elf",
+    "mode": "EMULATION",
+    "target": "ARM",
+    "asil_level": "ASIL-D",
+    "machine": "lm3s6965evb",
+    "cpu": "cortex-m4",
+    "overhead_pct": 3.4
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 2,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 3,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 4,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 5,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "FAIL",
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+    },
+    {
+      "id": 6,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 7,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 8,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 9,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 10,
+      "fault_type": "sensor_corruption",
+      "variable": "speed_RPM",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    }
+  ]
+}

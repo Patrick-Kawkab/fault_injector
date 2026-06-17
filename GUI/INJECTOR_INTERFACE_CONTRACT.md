@@ -18,8 +18,13 @@ list back with the verdict filled in.
 
 ## 1. Invocation
 
-The orchestrator launches the injector as a child process, headless (no
-terminal), after OpenOCD is already up (OpenOCD is the debugger — there is no separate GDB process):
+The orchestrator launches the injector as a child process, headless (no terminal).
+Process model (no separate GDB process — OpenOCD is the debugger):
+
+  * **Tiva (hardware):** the orchestrator opens **OpenOCD first**, then the injector.
+    The injector must not be started until OpenOCD is up; it connects to OpenOCD.
+  * **QEMU (emulation):** the orchestrator opens **only the injector**. The
+    **injector launches QEMU itself** (its own process), using the per-fault `trigger` / `pc_trigger` / `timeout` fields below.
 
 ```
 <injector> --config <config.json> --out <result.json> --backend <tiva|qemu> --gdb <host:port>
@@ -52,7 +57,7 @@ Process behaviour the orchestrator depends on:
     "asil_level": "ASIL-D",
     "machine": "lm3s6965evb",
     "cpu": "cortex-m4",
-    "gdb": "localhost:3333"
+    "gdb": 3333
   },
   "faults": [
     {
@@ -67,7 +72,10 @@ Process behaviour the orchestrator depends on:
       "duration_ms": 3500,
       "interval_ms": 50,
       "delay_ms": 10,
-      "bit_position": 0
+      "bit_position": 0,
+      "trigger": "mem_access",
+      "pc_trigger": "0x00000400",
+      "timeout": 60
     }
   ]
 }
@@ -83,7 +91,7 @@ Process behaviour the orchestrator depends on:
 | `asil_level` | string | `ASIL-A` … `ASIL-D`. Drives the orchestrator's pass/fail thresholds, not the injection. |
 | `machine` | string | Target board / QEMU machine, e.g. `lm3s6965evb`. User-selected in the UI. |
 | `cpu` | string | CPU core, e.g. `cortex-m4` / `cortex-m3`. User-selected in the UI. |
-| `gdb` | string | Endpoint the injector dials, e.g. `localhost:3333`. The port is user-selected (3333 / 4444 / 1234 / 9001). |
+| `gdb` | int | Port the injector dials on localhost (the system always runs locally, so only the port is sent — `3333`, not `"localhost:3333"`). User-selected (3333 / 4444 / 1234 / 9001). |
 
 ### `faults[]` (one object per injection)
 
@@ -101,6 +109,9 @@ Process behaviour the orchestrator depends on:
 | `interval_ms` | int | How often to re‑inject during the hold window, in ms. Must be smaller than the firmware's sampling period so re‑injection beats any ISR that overwrites the value. |
 | `delay_ms` | int | **ASIL recovery deadline (ms)** — the injector FAILs any injection whose recovery is later than this. Same for every fault in the campaign (from the ASIL: A 50, B 30, C 20, D 10). Distinct from the `task_delay` magnitude in `value`. |
 | `bit_position` | int | Bit to flip when `fault_type == "bit_flip"`; ignored otherwise. |
+| `trigger` | string | QEMU trigger the injector uses when it launches QEMU: `mem_access` / `insn_count` / `pc`. Ignored on the Tiva backend. |
+| `pc_trigger` | string | PC value to trigger on (used when `trigger == "pc"`). Ignored on the Tiva backend. |
+| `timeout` | int | QEMU session timeout (seconds). Ignored on the Tiva backend. |
 
 > **Varied campaigns:** the `faults[]` entries may be identical (same fault ×N) or distinct (a user-built list repeated to reach N). Either way each entry is self-contained and processed independently by `id`; the shape is unchanged.
 
