@@ -4,31 +4,26 @@
 #include "Session.h"
 #include <string>
 
-class HardwareSession {
+class HardwareSession : public Session {
 public:
     HardwareSession(const std::string& host = "localhost", int port = 4444);
-    ~HardwareSession();
+    ~HardwareSession() override;
 
-    int start() ;
-    int stop() noexcept ;
-    bool sensorCorruptionTest(
-        uint32_t encoderCountAddr,
-        uint32_t cruiseStateAddr,
-        uint32_t durationMs,
-        uint32_t intervalMs = 50
-    );
-    bool taskDelayTest(
-        uint32_t samplePeriodAddr,
-        uint32_t cruiseStateAddr,
-        uint32_t corruptedValue,
-        uint32_t duration_ms,
-        uint32_t interval_ms
-    );
-    bool pcCorruptionTest(uint32_t badPC, uint32_t cruiseStateAddr, uint32_t wait_ms);
-    bool task_delay(uint32_t addr,uint8_t delay_ms, uint32_t cruiseStateAddr);
-    bool bitFlip(uint32_t addr, uint8_t bit_position, uint8_t minExpected, uint8_t maxExpected, uint8_t delay_ms);
+    int start() override;
+    int stop() noexcept override;
 
-    bool memoryCorruptionTest(uint32_t addr,uint8_t injectedValue,uint8_t minExpected,  uint8_t maxExpected,uint8_t delay_ms) ;
+    // ── Session interface ────────────────────────────────────────────
+    // FaultConfig.h is the QEMU<->plugin wire format and has no
+    // dedicated "duration/delay" or "interval" fields, so the following
+    // FaultDescriptor fields are repurposed for hardware timing/state:
+    //   target_count -> duration / delay / wait, in milliseconds
+    //   sensor_addr  -> address to verify after injection (cruise_state)
+    //   target_addr  -> (Task_delay only) corrupted value to write
+    FaultResult setPC(const FaultDescriptor& desc) override;
+    FaultResult memoryCorruptionTest(const FaultDescriptor& desc) override;
+    FaultResult bitFlipTest(const FaultDescriptor& desc) override;
+    FaultResult Task_delay(const FaultDescriptor& desc) override;
+    FaultResult sensorCorruptionTest(const FaultDescriptor& desc) override;
 
 private:
     int sockfd;
