@@ -24,7 +24,7 @@ public:
     virtual FaultResult Task_delay(const FaultDescriptor& desc)=0;
     virtual FaultResult sensorCorruptionTest(const FaultDescriptor& desc)=0;
     
-    static std::unique_ptr<Session> create(const std::string& type);
+    static std::unique_ptr<Session> create(const std::string& type, const QemuSessionConfig* qemuCfg = nullptr);
 };
     
 #endif

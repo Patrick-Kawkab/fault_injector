@@ -50,6 +50,7 @@ typedef enum {
 // ─────────────────────────────────────────────────────────────────────────────
 typedef struct {
     uint8_t   fault_type;       // FaultType  (use uint8_t for fixed wire size)
+    uint16_t  id;               // explicit padding — keeps layout predictable
     uint8_t   trigger;          // TriggerType
     uint8_t   injected_value;   // value to write  (memory/sensor corruption)
     uint8_t   bit_pos;          // bit index 0-7   (bit_flip)
@@ -61,8 +62,8 @@ typedef struct {
     uint32_t  new_pc;           // redirect target   (set_pc)
     uint32_t  sensor_addr;      // address to watch  (sensor_corruption)
     uint64_t  target_count;     // instruction count trigger
-    uint64_t observe_window;
-    uint64_t duration_Ms;
+    uint64_t  duration_Ms;
+    uint64_t  observe_window;   // total instructions to observe after injection (memory/sensor_corruption)
 } FaultDescriptor;
 
 // ── Result — sent from plugin back to QEMUSession ────────────────────────────

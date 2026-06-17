@@ -4,15 +4,20 @@
 #include<memory>
 #include<stdexcept>
 
-#define ELF_FILE_PATH      "./tiva_c/tiva_led.elf" //temp fix
 
+std::unique_ptr<Session> Session::create(const std::string& type ,  const QemuSessionConfig* qemuCfg = nullptr){
+    if(type == "qemu")
+    {
+        if(qemuCfg == nullptr)
+            throw std::runtime_error("QEMU config is required");
 
-std::unique_ptr<Session> Session::create(const std::string& type){
-    if(type == "qemu"){
-        return std::make_unique<QEMUSession>(ELF_FILE_PATH);
+        return std::make_unique<QEMUSession>(*qemuCfg);
     }
-    else if(type=="hardware"){
+
+    if(type == "hardware")
+    {
         return std::make_unique<HardwareSession>();
     }
+
         throw std::invalid_argument("Invalid injector type: "+ type);
 }
