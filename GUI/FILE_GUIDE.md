@@ -20,7 +20,7 @@
 - **orchestrator/worker.py** — the background thread that runs a campaign: brings up the target, runs the injector, streams log/progress lines, and feeds the results manager.
 - **orchestrator/injector_interface.py** — builds the injector command and the `{meta, faults[]}` input file, runs the injector (mock or real), reads its result file, and yields result messages. Applies the user‑selected GDB port and fault count.
 - **orchestrator/mock_injector.py** — the stand‑in for the C++ injector: reads the input JSON, simulates each fault as PASS/FAIL, writes the result JSON. The default when no real binary is configured.
-- **orchestrator/targets.py** — brings up the debug server for the chosen backend (**OpenOCD** for Tiva‑C, **QEMU** for emulation), gated on its port opening. No GDB process — OpenOCD is the debugger; the injector is the other background process. Teardown stops the server.
+- **orchestrator/targets.py** — brings up what *we* open per backend: for **Tiva** it launches **OpenOCD** (the debugger) and gates on its port; for **QEMU** it launches **nothing** — the injector opens QEMU itself. No GDB process. Teardown stops whatever was started.
 - **orchestrator/proc.py** — process supervision helpers: `wait_for_port` and `SupervisedProcess` (headless launch, output pumped to the log, process‑group teardown).
 - **orchestrator/results_manager.py** — turns the injector's PASS/FAIL/ERROR results into the metrics + verdict payload the tabs render (handling rate, ASIL pass/fail, overhead). The injector owns lateness, so there is no timing re‑gate.
 

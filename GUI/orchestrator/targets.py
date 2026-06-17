@@ -5,16 +5,20 @@ The execution backend a fault is injected into, chosen from ``config.hardware``
 ("qemu" or "tivac"). The worker uses the common ``BaseTarget`` interface and
 never branches on which one it got.
 
-Phase 2: ``setup()`` brings up the debug server the injector talks to and gates
-on readiness (its TCP port opening). There is NO separate GDB process — OpenOCD
-itself is the debugger. The two background processes during a real run are:
+Phase 2: ``setup()`` brings up what *we* are responsible for, per backend. There
+is NO separate GDB process — OpenOCD itself is the debugger. The background
+processes differ by backend:
 
-    1. OpenOCD (Tiva) / QEMU (emulation)   ← brought up here
-    2. the injector, main.cpp              ← launched by injector_interface
+  * Tiva (hardware): TWO processes, both opened by us — OpenOCD first, then the
+    injector (main.cpp), which cannot run until OpenOCD is already up.
+    ``setup()`` launches OpenOCD and gates on its port.
+  * QEMU (emulation): ONE process opened by us — the injector. The injector
+    opens QEMU itself in its own terminal, using the qemu meta we send. So
+    ``setup()`` launches nothing for QEMU.
 
-The injector connects to OpenOCD/QEMU directly over the selected port and does
-the halt / inject / resume itself. ``teardown()`` stops the server (as a process
-group). None of this runs in mock mode — the worker skips ``setup()`` for a
+In both cases the injector is launched separately by ``injector_interface``.
+``teardown()`` stops whatever ``setup()`` started (OpenOCD for Tiva; nothing for
+QEMU). None of this runs in mock mode — the worker skips ``setup()`` for a
 simulated campaign, so the demo never touches OpenOCD/QEMU.
 """
 
@@ -74,36 +78,15 @@ class QemuTarget(BaseTarget):
     name = "QEMU (lm3s6965evb)"
     is_hardware = False
 
-    QEMU_BIN = os.environ.get("FI_QEMU", "qemu-system-arm")
-    MACHINE = "lm3s6965evb"  # TI Stellaris Cortex-M3 — closest QEMU board to Tiva-C
-    PORT = 1234              # QEMU gdbstub; the injector connects here
-
-    def _qemu_cmd(self) -> List[str]:
-        machine = getattr(self.config, "machine", "") or self.MACHINE
-        cpu = getattr(self.config, "cpu", "")
-        cmd = [self.QEMU_BIN, "-machine", machine]
-        if cpu:
-            cmd += ["-cpu", cpu]
-        cmd += ["-kernel", self._firmware(), "-nographic",
-                "-gdb", f"tcp::{self.PORT}", "-S"]  # freeze CPU; injector releases it
-        return cmd
+    PORT = 1234  # QEMU gdbstub the injector exposes (informational)
 
     def setup(self) -> None:
-        if shutil.which(self.QEMU_BIN) is None:
-            raise TargetError(
-                f"{self.QEMU_BIN} not found on PATH. Install qemu-system-arm, "
-                f"or run on the Tiva-C target."
-            )
-        self._log(f"[CONN]  Launching QEMU ({getattr(self.config, 'machine', '') or self.MACHINE}, "
-                  f"cpu={getattr(self.config, 'cpu', '?')})...")
-        qemu = SupervisedProcess("qemu", self._qemu_cmd(), on_line=self._log)
-        self._procs.append(qemu)
-        qemu.start()
-        if not wait_for_port("localhost", self.PORT, self.READY_TIMEOUT):
-            raise TargetError(f"QEMU gdbstub never opened on :{self.PORT}.")
-        if not qemu.alive:
-            raise TargetError("QEMU exited immediately — check the firmware/machine.")
-        self._log(f"[CONN]  QEMU gdbstub up on :{self.PORT} — ready for the injector")
+        # We do NOT launch QEMU. In QEMU mode the only process we open is the
+        # injector (main.cpp); the injector opens QEMU itself, in its own
+        # terminal, using the qemu meta we send (machine, cpu, trigger,
+        # pc_trigger, timeout). So there is nothing to bring up here.
+        self._log("[CONN]  QEMU mode — the injector launches QEMU itself "
+                  "(machine/cpu/trigger/timeout come from the config).")
 
     def injector_args(self) -> List[str]:
         return ["--backend", "qemu", "--gdb", f"localhost:{self.PORT}"]

@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "firmware": "tiva_led.elf",
+    "mode": "HARDWARE",
+    "target": "ARM",
+    "asil_level": "ASIL-D",
+    "machine": "lm3s6965evb",
+    "cpu": "cortex-m4",
+    "overhead_pct": 3.4
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 2,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 3,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 4,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    },
+    {
+      "id": 5,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "result": "PASS"
+    }
+  ]
+}

@@ -9,11 +9,11 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QComboBox, QSpinBox, QPushButton,
     QScrollArea, QFrame, QSizePolicy, QStackedWidget,
-    QCheckBox, QListWidget, QListWidgetItem
+    QCheckBox, QListWidget, QListWidgetItem, QFileDialog
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from config import FaultConfig, SENSOR_DB, FAULT_TYPES, ASIL_LEVELS, HARDWARE_MODES, GDB_PORTS, MACHINES, CPUS
+from config import FaultConfig, SENSOR_DB, FAULT_TYPES, ASIL_LEVELS, HARDWARE_MODES, GDB_PORTS, MACHINES, CPUS, QEMU_TRIGGERS
 import styles
 from widgets import SectionLabel, FieldLabel, AITag, EmptyState, HDivider
 
@@ -275,6 +275,19 @@ class ConfigPanel(QWidget):
 
         # ── Target / debug section (goes into the JSON meta) ──
         vl.addWidget(SectionLabel("Target / debug"))
+
+        # Firmware (ELF) with a Browse button
+        self._firmware_input = self._make_input("path/to/firmware.elf")
+        self._firmware_input.setText("tiva_led.elf")
+        self._fw_browse_btn = QPushButton("Browse…")
+        self._fw_browse_btn.clicked.connect(self._on_browse_firmware)
+        fw_row = QHBoxLayout()
+        fw_row.setSpacing(8)
+        fw_row.addWidget(self._firmware_input, stretch=1)
+        fw_row.addWidget(self._fw_browse_btn)
+        vl.addWidget(FieldLabel("Firmware (ELF)"))
+        vl.addLayout(fw_row)
+
         self._machine_combo = self._make_combo(MACHINES)
         self._cpu_combo     = self._make_combo(CPUS)
         self._gdb_combo     = self._make_combo([str(p) for p in GDB_PORTS])
@@ -284,6 +297,18 @@ class ConfigPanel(QWidget):
         vl.addWidget(self._cpu_combo)
         vl.addWidget(FieldLabel("GDB port"))
         vl.addWidget(self._gdb_combo)
+
+        # ── QEMU session (used when the injector launches QEMU) ──
+        vl.addWidget(SectionLabel("QEMU session"))
+        self._qemu_trigger_combo = self._make_combo(QEMU_TRIGGERS)
+        vl.addWidget(FieldLabel("Trigger"))
+        vl.addWidget(self._qemu_trigger_combo)
+        self._qemu_pc_input = self._make_input("e.g. 0x00000400")
+        vl.addWidget(FieldLabel("PC trigger"))
+        vl.addWidget(self._qemu_pc_input)
+        self._qemu_timeout_spin = self._make_spin(1, 86400, 60, "s")
+        vl.addWidget(FieldLabel("Timeout"))
+        vl.addWidget(self._qemu_timeout_spin)
 
         # ── Timing section ──
         vl.addWidget(SectionLabel("Timing"))
@@ -444,7 +469,7 @@ class ConfigPanel(QWidget):
         is_bit_flip = (fault_key == "bit_flip")
         is_pc       = (fault_key == "pc_error")
         is_task     = (fault_key == "task_delay")
-        has_state   = fault_key in ("sensor_corruption", "task_delay")
+        has_state   = True  # system state is available for every fault type
         shows_value = fault_key in ("sensor_corruption", "memory_corruption", "task_delay")
 
         # Variable vs Address: PC error targets the program counter (an address).
@@ -539,6 +564,13 @@ class ConfigPanel(QWidget):
         self._fault_list.clear()
         self._fault_list_widget.clear()
 
+    def _on_browse_firmware(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Select firmware", "",
+            "Firmware (*.elf *.bin *.hex *.axf);;All files (*)")
+        if path:
+            self._firmware_input.setText(path)
+
     def _build_config(self) -> FaultConfig:
         hw_text   = self._hw_combo.currentText()
         hw_key    = "tivac" if "Tiva" in hw_text else "qemu"
@@ -546,7 +578,7 @@ class ConfigPanel(QWidget):
         fault_idx = self._fault_combo.currentIndex()
         fault_key = list(FAULT_TYPES.keys())[fault_idx]
         is_pc     = fault_key == "pc_error"
-        has_state = fault_key in ("sensor_corruption", "task_delay")
+        has_state = True  # system state available for every fault type
 
         return FaultConfig(
             hardware         = hw_key,
@@ -564,6 +596,10 @@ class ConfigPanel(QWidget):
             machine          = self._machine_combo.currentText(),
             cpu              = self._cpu_combo.currentText(),
             gdb_port         = int(self._gdb_combo.currentText()),
+            firmware         = self._firmware_input.text().strip() or "tiva_led.elf",
+            qemu_trigger     = self._qemu_trigger_combo.currentText(),
+            qemu_pc_trigger  = self._qemu_pc_input.text().strip(),
+            qemu_timeout     = self._qemu_timeout_spin.value(),
             num_faults       = self._num_faults_spin.value(),
             expected_behavior= self._expected_input.text().strip(),
         )
@@ -645,6 +681,8 @@ class ConfigPanel(QWidget):
             self._variable_input, self._address_input, self._system_state_input, self._min_spin, self._max_spin,
             self._fault_val_spin, self._bit_pos_spin, self._asil_combo,
             self._machine_combo, self._cpu_combo, self._gdb_combo, self._num_faults_spin,
+            self._firmware_input, self._fw_browse_btn,
+            self._qemu_trigger_combo, self._qemu_pc_input, self._qemu_timeout_spin,
             self._vary_check, self._add_fault_btn, self._remove_fault_btn, self._clear_faults_btn,
             self._duration_spin, self._expected_input,
         ]:

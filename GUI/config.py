@@ -18,6 +18,9 @@ class FaultConfig:
     machine: str = "lm3s6965evb"     # QEMU machine / target board (meta)
     cpu: str = "cortex-m4"           # CPU core, e.g. cortex-m4 / cortex-m3 (meta)
     gdb_port: int = 3333             # port the injector dials to reach the debug stack (meta gdb)
+    qemu_trigger: str = "mem_access"  # QEMU trigger: mem_access / insn_count / pc
+    qemu_pc_trigger: str = ""         # PC value to trigger on (used when qemu_trigger == "pc")
+    qemu_timeout: int = 60            # QEMU session timeout (s) the injector uses when it launches QEMU
     sensor: str = ""                  # "WSS", "TPS", "MAP", "ECT"
     fault_type: str = ""              # see FAULT_TYPES: sensor_corruption, memory_corruption, bit_flip, pc_error, task_delay
     variable: str = ""                # variable to inject into, e.g. "speed_RPM" (empty for pc_error)
@@ -61,7 +64,7 @@ class FaultConfig:
             "asil_level": self.asil_level,
             "machine": self.machine,
             "cpu": self.cpu,
-            "gdb": f"localhost:{self.gdb_port}",
+            "gdb": self.gdb_port,
         }
         # delay_ms carries the ASIL-specific recovery deadline the injector
         # compares against (late recovery -> FAIL). Same for every fault in the
@@ -88,6 +91,9 @@ class FaultConfig:
             "interval_ms": self.interval_ms,
             "delay_ms": self.delay_ms,
             "bit_position": self.bit_position,
+            "trigger": self.qemu_trigger,
+            "pc_trigger": self.qemu_pc_trigger,
+            "timeout": self.qemu_timeout,
         }
 
     @staticmethod
@@ -163,6 +169,7 @@ SENSOR_DB = {
 }
 
 GDB_PORTS = [3333, 4444, 1234, 9001]
+QEMU_TRIGGERS = ["mem_access", "insn_count", "pc"]
 MACHINES  = ["lm3s6965evb"]
 CPUS      = ["cortex-m4", "cortex-m3"]
 

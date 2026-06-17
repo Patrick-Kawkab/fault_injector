@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "firmware": "main.elf",
+    "mode": "HARDWARE",
+    "target": "ARM",
+    "asil_level": "ASIL-D",
+    "machine": "lm3s6965evb",
+    "cpu": "cortex-m4",
+    "gdb": "localhost:3333"
+  },
+  "faults": [
+    {
+      "id": 1,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "address": "",
+      "system_state": "",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 10,
+      "bit_position": 3
+    },
+    {
+      "id": 2,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "address": "",
+      "system_state": "",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 10,
+      "bit_position": 3
+    },
+    {
+      "id": 3,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "address": "",
+      "system_state": "",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 10,
+      "bit_position": 3
+    },
+    {
+      "id": 4,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "address": "",
+      "system_state": "",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 10,
+      "bit_position": 3
+    },
+    {
+      "id": 5,
+      "fault_type": "bit_flip",
+      "variable": "max_duty",
+      "address": "",
+      "system_state": "",
+      "value": 0,
+      "min": 0,
+      "max": 255,
+      "duration_ms": 3500,
+      "interval_ms": 50,
+      "delay_ms": 10,
+      "bit_position": 3
+    }
+  ]
+}
