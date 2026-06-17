@@ -33,6 +33,15 @@ void vCruiseTask(void *pvParameters);                      // Bang-bang cruise c
 void vManualTask(void *pvParameters);                      // Handles buttons and manual throttle
 void vWatchdogTask(void *pvParameters);                    // Monitors task health
 void vLCDTask(void *pvParameters);                         // Periodically updates LCD
+
+typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Cruise control mode
+
+void FailSafe_Shutdown(void);
+uint32_t sanitize_target_rpm(uint32_t rpm);
+uint32_t sanitize_measured_rpm(uint32_t rpm);
+CruiseState sanitize_cruise_state(CruiseState state);
+uint32_t sanitize_duty(uint32_t duty);
+uint32_t sanitize_sample_period(uint32_t period);
 // ============================================================
 // Constants
 // ============================================================
@@ -52,6 +61,7 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 #define ZERO_RPM_LIMIT          30     // 30 * 100ms = about 3 seconds before auto-cancel
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
+#define MAX_VALID_RPM 500
 
 #define WHEEL_DIAMETER_M        0.065f //Wheel diameter is 6.5 cm
 #define WHEEL_CIRCUMFERENCE     (3.14159f * WHEEL_DIAMETER_M)
@@ -71,17 +81,19 @@ void vLCDTask(void *pvParameters);                         // Periodically updat
 // These are visible to multiple tasks, so access is protected
 // by mutexes where appropriate.
 // ============================================================
-typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Cruise control mode
 
 volatile CruiseState cruise_state      = STATE_OFF; // Current cruise mode: OFF or ACTIVE
 volatile uint32_t    target_rpm        = 100;       // Desired speed when cruise is active
 volatile uint32_t    current_rpm       = 0;         // Measured speed from encoder
 volatile uint32_t    encoder_count     = 0;         // Raw pulse count collected by ISR
 volatile uint32_t    zero_rpm_count    = 0;         // Counts consecutive zero-RPM samples during cruise
-//#ifdef USE_QEMU_UART
+volatile uint32_t    sample_period     = SAMPLE_PERIOD_MS;
+volatile uint32_t    max_duty          = THROTTLE_ON;
+volatile uint32_t    min_duty          = THROTTLE_OFF;
+#ifdef USE_QEMU_UART
 volatile uint32_t    sim_rpm           = 0;         // Simulated RPM
-volatile uint32_t sim_throttle         = 0;         // 0..100%
-//#endif
+volatile uint32_t    sim_throttle         = 0;      // 0..100%
+#endif
 volatile uint32_t    encoder_task_kick = 0;         // Heartbeat counter for encoder task
 volatile uint32_t    cruise_task_kick  = 0;         // Heartbeat counter for cruise task
 volatile uint32_t    manual_task_kick  = 0;         // Heartbeat counter for manual task
@@ -104,6 +116,47 @@ SemaphoreHandle_t xStateMutex;                      // Protects cruise_state / t
 void delay_ms(uint32_t ms) {
     volatile uint32_t count = ms * (CPU_CLOCK_HZ / 3000); // Rough loop count for ~ms delay at 80MHz
     while (count--);                                   // Burn CPU cycles until count reaches zero
+}
+
+
+void FailSafe_Shutdown(void) {
+    if (xStateMutex != NULL) {
+        if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+            cruise_state = STATE_OFF;
+            zero_rpm_count = 0;
+            target_rpm = sanitize_target_rpm(target_rpm);
+            xSemaphoreGive(xStateMutex);
+        }
+    }
+    PWM_SetDuty(sanitize_duty(min_duty));
+#ifndef USE_QEMU_UART
+    led_set(1, 0, 0);
+#endif
+}
+
+uint32_t sanitize_target_rpm(uint32_t rpm) {
+    if (rpm > SPEED_MAX) return SPEED_MAX;
+    return rpm;
+}
+
+uint32_t sanitize_measured_rpm(uint32_t rpm) {
+    if (rpm > MAX_VALID_RPM) return current_rpm;
+    return rpm;
+}
+
+CruiseState sanitize_cruise_state(CruiseState state) {
+    if ((state != STATE_OFF) && (state != STATE_ACTIVE)) return STATE_OFF;
+    return state;
+}
+
+uint32_t sanitize_duty(uint32_t duty) {
+    if (duty > 100) return THROTTLE_OFF;
+    return duty;
+}
+
+uint32_t sanitize_sample_period(uint32_t period) {
+    if (period < 10 || period > 1000) return SAMPLE_PERIOD_MS;
+    return period;
 }
 
 // ============================================================
@@ -397,7 +450,8 @@ void vEncoderTask(void *pvParameters) {
 #endif
 
     while (1) {
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(SAMPLE_PERIOD_MS));
+        uint32_t period = sanitize_sample_period(sample_period);
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(period));
         encoder_task_kick++;
 
         uint32_t rpm;
@@ -408,9 +462,9 @@ void vEncoderTask(void *pvParameters) {
         uint32_t throttle;
 
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
-            state = cruise_state;
-            target = target_rpm;
-            throttle = sim_throttle;
+        state    = sanitize_cruise_state(cruise_state);
+        target   = sanitize_target_rpm(target_rpm);
+        throttle = sanitize_duty(sim_throttle);
             xSemaphoreGive(xStateMutex);
         } else {
             continue;
@@ -453,7 +507,8 @@ void vEncoderTask(void *pvParameters) {
 #endif
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
-            current_rpm = rpm;
+        rpm = sanitize_measured_rpm(rpm);
+        current_rpm = rpm;
             xSemaphoreGive(xRPMMutex);
         }
 
@@ -463,12 +518,15 @@ void vEncoderTask(void *pvParameters) {
                 if (zero_rpm_count >= ZERO_RPM_LIMIT) {
                     cruise_state = STATE_OFF;
                     zero_rpm_count = 0;
-                    PWM_SetDuty(THROTTLE_OFF);
+                    PWM_SetDuty(sanitize_duty(min_duty));
+                    #ifndef USE_QEMU_UART
                     led_set(1, 0, 0);
-#ifdef USE_QEMU_UART
-                    uart_puts("[MONITOR][FAULT] Zero RPM timeout -> cruise CANCELLED");
-                    uart_nl();
-#endif
+                    #endif
+
+                    #ifdef USE_QEMU_UART
+                        uart_puts("[MONITOR][FAULT] Zero RPM timeout -> cruise CANCELLED");
+                        uart_nl();
+                    #endif
                 }
             } else {
                 zero_rpm_count = 0;
@@ -495,27 +553,34 @@ void vCruiseTask(void *pvParameters) {
         uint32_t target;
 
         if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read shared state safely
-            state  = cruise_state;                  // Snapshot current cruise mode
-            target = target_rpm;                    // Snapshot current target speed
+            state  = sanitize_cruise_state(cruise_state);                  // Snapshot current cruise mode
+            target = sanitize_target_rpm(target_rpm);                    // Snapshot current target speed
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else {
             continue;                               // Skip this cycle if mutex unavailable
         }
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read shared RPM safely
-            rpm = current_rpm;                      // Snapshot measured RPM
+            rpm = sanitize_measured_rpm(current_rpm);                      // Snapshot measured RPM
             xSemaphoreGive(xRPMMutex);              // Release RPM mutex
         } else {
             continue;                               // Skip this cycle if mutex unavailable
         }
 
-        if (state == STATE_ACTIVE) {               // Only control motor automatically when cruise is active
-            if (rpm < (target - DEADBAND)) {       // Vehicle slower than desired speed window
-                PWM_SetDuty(THROTTLE_ON);           // Apply throttle / power to motor driver
-                led_set(0, 0, 1);                  // Blue LED = accelerating / adding throttle
-            } else if (rpm > (target + DEADBAND)) {// Vehicle faster than desired speed window
-                PWM_SetDuty(THROTTLE_OFF);          // Cut throttle
-                led_set(0, 1, 0);                  // Green LED = above target / backing off
+        if (state == STATE_ACTIVE) {
+            uint32_t lower = (target > DEADBAND) ? (target - DEADBAND) : 0;
+            uint32_t upper = target + DEADBAND;
+
+            if (rpm < lower) {
+                PWM_SetDuty(sanitize_duty(max_duty));
+        #ifndef USE_QEMU_UART
+                led_set(0, 0, 1);
+        #endif
+            } else if (rpm > upper) {
+                PWM_SetDuty(sanitize_duty(min_duty));
+        #ifndef USE_QEMU_UART
+                led_set(0, 1, 0);
+        #endif
             }
         }
     }
@@ -676,9 +741,10 @@ void vWatchdogTask(void *pvParameters) {
             if (xSemaphoreTake(xStateMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Lock shared state
                 cruise_state = STATE_OFF;         // Force cruise off as fail-safe
                 zero_rpm_count = 0;               // Clear zero-RPM fault counter
+                PWM_SetDuty(sanitize_duty(min_duty));
                 xSemaphoreGive(xStateMutex);      // Release mutex
             }
-            PWM_SetDuty(THROTTLE_OFF);            // Remove motor command as fail-safe
+            PWM_SetDuty(sanitize_duty(min_duty));            // Remove motor command as fail-safe
             led_set(1, 0, 0);                     // Red LED indicates fail-safe/off
             stall_encoder = stall_cruise = stall_manual = 0; // Reset counters after action
         }
@@ -779,7 +845,8 @@ int main(void) {
 
     #ifndef USE_QEMU_UART
         LCD_Init();
-    #endif
+        led_set(1, 0, 0);                               // Red LED at startup = system initially OFF
+        #endif
 
     #ifdef FAULT_INJECTION_TEST
     // Pre-activate cruise so fault injection tests run fully automated

@@ -43,15 +43,13 @@ void vLCDTask(void *pvParameters);                         // LCD display update
 
 #define SPEED_MIN               0      // Minimum allowed target RPM
 #define SPEED_MAX               300    // Maximum allowed target RPM
-#define SPEED_STEP              10     // Step added/subtracted when buttons are pressed
+#define SPEED_STEP              5      // Step added/subtracted when buttons are pressed
 
 #define ENCODER_PPR             11     // Encoder pulses per revolution
 #define SAMPLE_PERIOD_MS        100    // Encoder sampling period in milliseconds
 
 #define BUTTON_RELEASE_TIMEOUT  500    // Max time to wait for button release before continuing
 
-#define WHEEL_DIAMETER_M        0.065f //Wheel diameter is 6.5 cm
-#define WHEEL_CIRCUMFERENCE     (3.14159f * WHEEL_DIAMETER_M)
 // ============================================================
 // LCD pin definitions used by this exact code
 // RS=PC4, E=PC5, D4=PC6, D5=PC7, D6=PB4, D7=PB5
@@ -73,13 +71,17 @@ void vLCDTask(void *pvParameters);                         // LCD display update
 // ============================================================
 typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Two possible operating modes
 
-volatile CruiseState cruise_state  = STATE_OFF; // Current cruise mode: OFF or ACTIVE
-volatile uint32_t    target_rpm    = 100;       // Target RPM selected by user buttons
-volatile uint32_t    current_rpm   = 0;         // Measured RPM calculated from encoder
-volatile uint32_t    encoder_count = 0;         // Raw pulse count incremented by encoder ISR
+volatile CruiseState cruise_state  = STATE_OFF;     // Current cruise mode: OFF or ACTIVE
+volatile uint32_t    target_rpm    = 100;           // Target RPM selected by user buttons
+volatile uint32_t    current_rpm   = 0;             // Measured RPM calculated from encoder
+volatile uint32_t    encoder_count = 0;             // Raw pulse count incremented by encoder ISR
+volatile uint32_t    max_rpm           = 300;       // Max motor rpm
+volatile uint32_t    min_rpm           = 0;         // Min motor rpm
+volatile uint32_t    max_duty          = 80;        // Maximum duty cycle for when the throttle is on
+volatile uint32_t    min_duty          = 0;         // Minimum duty cycle for when the throttle is off
 
-SemaphoreHandle_t xRPMMutex;                    // Protects current_rpm
-SemaphoreHandle_t xStateMutex;                  // Protects cruise_state and target_rpm
+SemaphoreHandle_t xRPMMutex;                        // Protects current_rpm
+SemaphoreHandle_t xStateMutex;                      // Protects cruise_state and target_rpm
 
 // ============================================================
 // Busy-wait delay
@@ -368,7 +370,7 @@ void vEncoderTask(void *pvParameters) {
         encoder_count = 0;                          // Reset pulse count for next sampling window
         taskEXIT_CRITICAL();                        // End critical section
 
-        uint32_t rpm = (count * 60000UL) / (ENCODER_PPR * SAMPLE_PERIOD_MS); // Convert pulse count to RPM
+        uint32_t rpm = (count * 60000UL) / ((uint32_t)ENCODER_PPR * SAMPLE_PERIOD_MS); // Convert pulse count to RPM
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Lock RPM shared variable
             current_rpm = rpm;                      // Publish new measured RPM
@@ -525,12 +527,10 @@ void vLCDTask(void *pvParameters) {
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else { continue; }                        // Skip update if mutex unavailable
 
-        uint32_t kph = (rpm * WHEEL_CIRCUMFERENCE * WHEEL_DIAMETER_M) / 11;
-
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
-        uint32_to_str(kph, num_buf, 4);             // Format RPM number
+        uint32_to_str(rpm, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
-        LCD_String(" KPH");                        // Print RPM label
+        LCD_String(" RPM");                        // Print RPM label
 
         LCD_SetCursor(1, 7);                        // Move after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM
