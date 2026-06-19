@@ -302,7 +302,7 @@ int main(int argc ,char* argv[]){
     campaignResult["meta"] = config["meta"];
     campaignResult["faults"] = json::array();
 
-    const std::string resultFile =  config["meta"]["mode"].get<std::string>();//
+    const std::string resultFile =  config["meta"]["xxxx"].get<std::string>();//xxxx -> el mkan elli 7atito feh el result
 
     std::string mode = config["meta"]["mode"].get<std::string>();
     std::cout << "[main] Running in mode: " << mode << '\n';

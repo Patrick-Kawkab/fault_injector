@@ -225,7 +225,7 @@ bool QEMUSession::launchQEMU() {
     }
     if (qemuPid_ == 0) {
         // Child: exec xterm; xterm will be the process we track
-        ::execl("/bin/sh", "sh", "-c", cmd.str().c_str(), nullptr);
+        ::execl("/bin/sh", "sh", "-c", qemuCmd.str().c_str(), nullptr);
         ::_exit(127);
     }
 
