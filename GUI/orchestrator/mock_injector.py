@@ -40,12 +40,15 @@ def emit(obj: dict) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--out", default="campaign_result.json")
-    ap.add_argument("--backend", default="qemu")
-    ap.add_argument("--gdb", default="")
-    args = ap.parse_args()
+    # Same CLI contract as the real injector: argv[1] = config, argv[2] = output.
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "Input.json"
+    out_path = sys.argv[2] if len(sys.argv) > 2 else "campaign_result.json"
+
+    class _Args:
+        pass
+    args = _Args()
+    args.config = config_path
+    args.out = out_path
 
     try:
         with open(args.config) as fh:

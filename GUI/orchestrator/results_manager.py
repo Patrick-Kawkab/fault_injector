@@ -24,7 +24,7 @@ from typing import List
 
 from config import (
     FAULT_TYPES, ASIL_COVERAGE, ASIL_FTTI_MS, MAX_OVERHEAD_PCT,
-    expected_safe_state, UNSAFE_OUTCOME_TEXT,
+    expected_safe_state, UNSAFE_OUTCOME_TEXT, display_fault_type,
 )
 
 
@@ -62,7 +62,7 @@ class ResultsManager:
 
         case = {
             "id": f"TC-{iid:03d}",
-            "fault_type": FAULT_TYPES.get(ft_raw, ft_raw),
+            "fault_type": display_fault_type(ft_raw),
             "variable": msg.get("variable") or msg.get("address") or self.config.variable or self.config.address,
             "value": msg.get("value"),
             "min": msg.get("min"),
