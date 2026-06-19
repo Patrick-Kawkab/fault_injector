@@ -94,6 +94,13 @@ class InjectorInterface:
 
     def _write_config(self) -> None:
         payload = self.config.to_injector_input()
+        # Make the run folder self-describing: the config carries the paths of
+        # this config file and the communication/result file it pairs with, both
+        # inside runs/run_<ts>/. The injector can read result_file from here (or
+        # keep using argv[2] — they point to the same file).
+        payload["meta"]["run_dir"] = self.workdir
+        payload["meta"]["config_file"] = self.config_path
+        payload["meta"]["result_file"] = self.result_path
         with open(self.config_path, "w") as fh:
             json.dump(payload, fh, indent=2)
 

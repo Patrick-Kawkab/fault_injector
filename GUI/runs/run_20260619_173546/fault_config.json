@@ -1,12 +1,16 @@
 {
   "meta": {
-    "firmware": "tiva_led.elf",
-    "mode": "HARDWARE",
+    "firmware": "main_fault_test.elf",
+    "mode": "qemu",
     "target": "ARM",
     "asil_level": "ASIL-D",
     "machine": "lm3s6965evb",
     "cpu": "cortex-m4",
-    "gdb": 3333
+    "server_port": 9001,
+    "timeout_secs": 60,
+    "run_dir": "/home/justsaber/Desktop/GUI/runs/run_20260619_173546",
+    "config_file": "/home/justsaber/Desktop/GUI/runs/run_20260619_173546/fault_config.json",
+    "result_file": "/home/justsaber/Desktop/GUI/runs/run_20260619_173546/campaign_result.json"
   },
   "faults": [
     {
@@ -14,8 +18,8 @@
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -23,16 +27,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 2,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -40,16 +43,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 3,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -57,16 +59,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 4,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -74,16 +75,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 5,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -91,16 +91,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 6,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -108,16 +107,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 7,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -125,16 +123,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 8,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -142,16 +139,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 9,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -159,16 +155,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 10,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -176,16 +171,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 11,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -193,16 +187,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 12,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -210,16 +203,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 13,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -227,16 +219,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 14,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -244,16 +235,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 15,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -261,16 +251,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 16,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -278,16 +267,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 17,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -295,16 +283,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 18,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -312,16 +299,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 19,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -329,16 +315,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 20,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -346,16 +331,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 21,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -363,16 +347,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 22,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -380,16 +363,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 23,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -397,16 +379,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 24,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -414,16 +395,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 25,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -431,16 +411,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 26,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -448,16 +427,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 27,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -465,16 +443,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 28,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -482,16 +459,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 29,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -499,16 +475,15 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     },
     {
       "id": 30,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
       "address": "",
-      "system_state": "cruise_active",
-      "value": -4,
+      "system_state": "",
+      "value": -1,
       "min": 0,
       "max": 255,
       "duration_ms": 3500,
@@ -516,8 +491,7 @@
       "delay_ms": 10,
       "bit_position": 0,
       "trigger": "mem_access",
-      "pc_trigger": "",
-      "timeout": 60
+      "pc_trigger": ""
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "meta": {
-    "firmware": "tiva_led.elf",
-    "mode": "HARDWARE",
+    "firmware": "main_fault_test.elf",
+    "mode": "qemu",
     "target": "ARM",
     "asil_level": "ASIL-D",
     "machine": "lm3s6965evb",
@@ -13,7 +13,7 @@
       "id": 1,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -22,7 +22,7 @@
       "id": 2,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -31,7 +31,7 @@
       "id": 3,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -40,7 +40,7 @@
       "id": 4,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -49,7 +49,7 @@
       "id": 5,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -58,17 +58,16 @@
       "id": 6,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "FAIL",
-      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+      "result": "PASS"
     },
     {
       "id": 7,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -77,7 +76,7 @@
       "id": 8,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -86,7 +85,7 @@
       "id": 9,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -95,7 +94,7 @@
       "id": 10,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -104,7 +103,7 @@
       "id": 11,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -113,7 +112,7 @@
       "id": 12,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -122,16 +121,17 @@
       "id": 13,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "PASS"
+      "result": "FAIL",
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
     },
     {
       "id": 14,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -140,16 +140,17 @@
       "id": 15,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "PASS"
+      "result": "FAIL",
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
     },
     {
       "id": 16,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -158,7 +159,7 @@
       "id": 17,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -167,7 +168,7 @@
       "id": 18,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -176,7 +177,7 @@
       "id": 19,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -185,7 +186,7 @@
       "id": 20,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -194,16 +195,17 @@
       "id": 21,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "PASS"
+      "result": "FAIL",
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
     },
     {
       "id": 22,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -212,7 +214,7 @@
       "id": 23,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -221,7 +223,7 @@
       "id": 24,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -230,7 +232,7 @@
       "id": 25,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -239,16 +241,17 @@
       "id": 26,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "PASS"
+      "result": "FAIL",
+      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
     },
     {
       "id": 27,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
@@ -257,27 +260,25 @@
       "id": 28,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "FAIL",
-      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+      "result": "PASS"
     },
     {
       "id": 29,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
-      "result": "FAIL",
-      "note": "Faulty value used by controller \u2014 no safe-state transition (fault propagated)"
+      "result": "PASS"
     },
     {
       "id": 30,
       "fault_type": "sensor_corruption",
       "variable": "speed_RPM",
-      "value": -15,
+      "value": -1,
       "min": 0,
       "max": 255,
       "result": "PASS"
