@@ -20,6 +20,7 @@
 #include "Session.h"
 #include "json.hpp"   // nlohmann — only included in this file
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -27,6 +28,7 @@
 
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 // ── Lookup tables — string ↔ enum ────────────────────────────────────────────
 
@@ -57,6 +59,24 @@ static const std::unordered_map<TriggerType, std::string> kTriggerNames = {
     { TRIGGER_INSN_COUNT, "insn_count" },
     { TRIGGER_MEM_ACCESS, "mem_access" },
 };
+
+// ── ms → instruction-count conversion (QEMU mode only) ───────────────────────
+//
+// QEMU's plugin gives us deterministic instruction counting, which is far
+// more reproducible than a wall-clock delay inside an emulated target. So for
+// qemu-mode runs we convert any ms-based timing field into an approximate
+// instruction count instead of passing the raw millisecond value through.
+//
+// insn_count ≈ duration_ms * (cpu_freq_hz / 1000), assuming ~1 instruction
+// per cycle (CPI ≈ 1). This is an approximation, not a cycle-accurate value.
+// Override the default via meta.cpu_freq_hz in the input JSON if you have a
+// better figure (e.g. measured IPC for this firmware).
+static constexpr uint64_t kDefaultQemuCpuFreqHz = 16'000'000; // lm3s6965evb default (50 MHz)
+
+static inline uint64_t msToInsnCount(uint64_t ms, uint64_t cpuFreqHz)
+{
+    return (ms * cpuFreqHz) / 1000;
+}
 
 // ─────────────────────────────────
 
@@ -113,7 +133,9 @@ uint32_t getSystemStateAddress(const std::string& elfPath, const std::string& ad
 
 static FaultDescriptor parseFaultDescriptor(
     const json& fault,
-    const std::string& elfPath)
+    const std::string& elfPath,
+    bool isQemuMode,
+    uint64_t cpuFreqHz)
 {
     FaultDescriptor d{};
 
@@ -157,11 +179,18 @@ static FaultDescriptor parseFaultDescriptor(
             ? 0
             : getSystemStateAddress(elfPath, system_state);
 
+    // delay_ms / duration_ms come in as wall-clock milliseconds from the GUI.
+    // In qemu mode we convert them to an instruction count so the plugin can
+    // trigger deterministically; in hardware mode the raw ms value is kept
+    // since OpenOCD has no notion of instruction counting.
+    uint64_t delay_ms    = fault.value("delay_ms", uint64_t(0));
+    uint64_t duration_ms = fault.value("duration_ms", uint64_t(0));
+
     d.target_count =
-        fault.value("delay_ms", uint64_t(0));
+        isQemuMode ? msToInsnCount(delay_ms, cpuFreqHz) : delay_ms;
 
     d.observe_window =
-        fault.value("duration_ms", uint64_t(0));
+        isQemuMode ? msToInsnCount(duration_ms, cpuFreqHz) : duration_ms;
 
     d.injected_value =
         fault.value("value", 0u);
@@ -181,7 +210,7 @@ static FaultDescriptor parseFaultDescriptor(
 
 // ── JSON → QemuSessionConfig ──────────────────────────────────────────────────
 
-static QemuSessionConfig parseSessionConfig(const json& j ) {
+static QemuSessionConfig parseSessionConfig(const json& j, const std::string& firmwarePath) {
     const auto& meta = j["meta"];
 
     QemuSessionConfig cfg;
@@ -190,8 +219,7 @@ static QemuSessionConfig parseSessionConfig(const json& j ) {
     cfg.cpu         = meta.value("cpu",         std::string("cortex-m4 "));
     cfg.serverPort  = meta.value("server_port", 9001);
     cfg.timeoutSecs = meta.value("timeout_secs", 30);
-    cfg.firmware =
-    QEMU_ELF_PATH + meta.at("firmware").get<std::string>();
+    cfg.firmware    = firmwarePath;
 
     printf("[INFO] QEMU session config:\n");
     printf("  firmware    : %s\n", cfg.firmware.c_str());
@@ -269,7 +297,6 @@ static void writeResult(
 
 int main(int argc ,char* argv[]){
     const std::string inputFile  = (argc > 1) ? argv[1] : CONFIG_JSON_PATH;
-    const std::string resultFile = (argc > 2) ? argv[2] : RESULT_JSON_PATH;
 
     std::ifstream ifs(inputFile);
     if (!ifs.is_open()) {
@@ -284,6 +311,23 @@ int main(int argc ,char* argv[]){
         return 1;
     }
 
+    // Output path: prefer meta.result_file from the input JSON (set by the
+    // GUI per-run), fall back to argv[2]/RESULT_JSON_PATH for standalone use.
+    const std::string resultFile = config["meta"].value(
+        "result_file",
+        (argc > 2) ? std::string(argv[2]) : std::string(RESULT_JSON_PATH));
+
+    // The run folder may not exist yet on first write — make sure it does.
+    fs::path resultPath(resultFile);
+    if (resultPath.has_parent_path()) {
+        std::error_code ec;
+        fs::create_directories(resultPath.parent_path(), ec);
+        if (ec) {
+            std::cerr << "[main] warning: could not create result dir "
+                      << resultPath.parent_path() << ": " << ec.message() << "\n";
+        }
+    }
+
     // Clear previous campaign result
     std::ofstream(resultFile, std::ios::trunc).close();
 
@@ -294,25 +338,37 @@ int main(int argc ,char* argv[]){
     std::string mode = config["meta"]["mode"].get<std::string>();
     std::cout << "[main] Running in mode: " << mode << '\n';
 
+    // Firmware path: prefer meta.run_dir from the input JSON (the GUI's
+    // per-run folder, which holds the build for this specific run), fall
+    // back to the fixed QEMU/HARDWARE elf directories otherwise.
+    const std::string runDir       = config["meta"].value("run_dir", std::string());
+    const std::string firmwareName = config["meta"]["firmware"].get<std::string>();
+
     // Prepare session configuration for QEMU if needed
     std::unique_ptr<QemuSessionConfig> sessionCfgPtr;
     std::string elfPath;
     if (mode == "qemu") {
-        elfPath = QEMU_ELF_PATH  + config["meta"]["firmware"].get<std::string>();
-        sessionCfgPtr = std::make_unique<QemuSessionConfig>(parseSessionConfig(config));
+        elfPath = !runDir.empty()
+            ? (runDir + "/" + firmwareName)
+            : (QEMU_ELF_PATH + firmwareName);
+        sessionCfgPtr = std::make_unique<QemuSessionConfig>(parseSessionConfig(config, elfPath));
     }
-
     else if(mode == "hardware") {
-        elfPath = HARDWARE_ELF_PATH  + config["meta"]["firmware"].get<std::string>();
+        elfPath = !runDir.empty()
+            ? (runDir + "/" + firmwareName)
+            : (HARDWARE_ELF_PATH + firmwareName);
     }
     else {
         std::cerr << "[main] unknown mode: " << mode << "\n";
         return 1;
     }
 
+    // Optional override for the ms→insn-count conversion factor used below.
+    const uint64_t cpuFreqHz = config["meta"].value("cpu_freq_hz", kDefaultQemuCpuFreqHz);
+
     for (const auto& fault : config["faults"]){
         auto session = Session::create(mode, (mode == "qemu") ? sessionCfgPtr.get() : nullptr);
-        FaultDescriptor desc = parseFaultDescriptor(fault, elfPath);
+        FaultDescriptor desc = parseFaultDescriptor(fault, elfPath, mode == "qemu", cpuFreqHz);
         if (session->start() != 0) {
             std::cerr << "[main] session.start() failed\n";
             return 1;

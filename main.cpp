@@ -88,12 +88,12 @@ int main(){
         }
         catch (const std::exception& e) {
             std::cerr << "[ERROR] " << e.what() << "\n";
-            return -1;
+            return -1;systemStateAddr
         }
         std::cout << "[INFO] "
         << " 0x" << std::hex << systemStateAddr << std::dec << "\n";
         bool testResult =
-            hardware.memoryCorruptionTest(systemStateAddr, value, min, max,delay_ms);
+            hardware.memoryCorruptionTest(, value, min, max,delay_ms);
         json output;
         output["faults"] = json::array();
 
