@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -94,13 +95,22 @@ class InjectorInterface:
 
     def _write_config(self) -> None:
         payload = self.config.to_injector_input()
-        # Make the run folder self-describing: the config carries the paths of
-        # this config file and the communication/result file it pairs with, both
-        # inside runs/run_<ts>/. The injector can read result_file from here (or
-        # keep using argv[2] — they point to the same file).
-        payload["meta"]["run_dir"] = self.workdir
+        # Self-describing run folder: the config and result files live here.
         payload["meta"]["config_file"] = self.config_path
         payload["meta"]["result_file"] = self.result_path
+        # The injector resolves the firmware at run_dir/<firmware>, so stage the
+        # selected ELF into this run folder and advertise run_dir. If there's no
+        # real file to copy, omit run_dir so the injector falls back to its own
+        # firmware directory (QEMU_ELF_PATH / HARDWARE_ELF_PATH).
+        fw = getattr(self.config, "firmware", "") or ""
+        if fw and os.path.isfile(fw):
+            dst = os.path.join(self.workdir, os.path.basename(fw))
+            try:
+                if os.path.abspath(fw) != os.path.abspath(dst):
+                    shutil.copy2(fw, dst)
+                payload["meta"]["run_dir"] = self.workdir
+            except OSError:
+                pass  # leave run_dir unset; injector uses its default ELF dir
         with open(self.config_path, "w") as fh:
             json.dump(payload, fh, indent=2)
 
