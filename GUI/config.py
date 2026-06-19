@@ -6,6 +6,7 @@ This is the contract between the GUI and the orchestrator.
 Neither side should modify field names without telling the other.
 """
 
+import os
 from dataclasses import dataclass, asdict, field
 from typing import List, Optional
 import json
@@ -47,7 +48,7 @@ class FaultConfig:
             f.write(self.to_json())
 
     def _mode(self) -> str:
-        return "HARDWARE" if self.hardware == "tivac" else "EMULATION"
+        return "hardware" if self.hardware == "tivac" else "qemu"
 
     def to_injector_input(self, count: int = None) -> dict:
         """Build the ``{meta, faults[]}`` contract the injector reads.
@@ -58,13 +59,14 @@ class FaultConfig:
         if count is None:
             count = self.num_faults
         meta = {
-            "firmware": self.firmware,
-            "mode": self._mode(),
-            "target": "ARM",
-            "asil_level": self.asil_level,
+            "firmware": os.path.basename(self.firmware) if self.firmware else self.firmware,
+            "mode": self._mode(),                  # "qemu" / "hardware"
+            "target": "ARM",                       # informational; injector ignores
+            "asil_level": self.asil_level,         # informational; injector ignores
             "machine": self.machine,
             "cpu": self.cpu,
-            "gdb": self.gdb_port,
+            "server_port": self.gdb_port,          # plugin TCP server port (injector reads this)
+            "timeout_secs": self.qemu_timeout,     # QEMU session timeout (injector reads this)
         }
         # delay_ms carries the ASIL-specific recovery deadline the injector
         # compares against (late recovery -> FAIL). Same for every fault in the
@@ -80,7 +82,7 @@ class FaultConfig:
     def fault_payload(self) -> dict:
         """The per-fault dict (without id), in contract field order."""
         return {
-            "fault_type": self.fault_type,
+            "fault_type": FAULT_TYPE_WIRE.get(self.fault_type, self.fault_type),
             "variable": self.variable,
             "address": self.address,
             "system_state": self.system_state,
@@ -93,7 +95,6 @@ class FaultConfig:
             "bit_position": self.bit_position,
             "trigger": self.qemu_trigger,
             "pc_trigger": self.qemu_pc_trigger,
-            "timeout": self.qemu_timeout,
         }
 
     @staticmethod
@@ -180,6 +181,24 @@ FAULT_TYPES = {
     "pc_error":          "PC Error",
     "task_delay":        "Task Delay",
 }
+
+# Framework fault_type key -> the injector's fault_type string (its kFaultTypeMap).
+# Three names match already; two differ.
+FAULT_TYPE_WIRE = {
+    "sensor_corruption": "sensor_corruption",
+    "memory_corruption": "memory_corruption",
+    "bit_flip":          "bit_flip",
+    "pc_error":          "set_pc",
+    "task_delay":        "instruction_skip",
+}
+_WIRE_TO_INTERNAL = {v: k for k, v in FAULT_TYPE_WIRE.items()}
+
+
+def display_fault_type(ft: str) -> str:
+    """Display label for a fault_type that may be an internal key or an
+    injector wire name (e.g. 'set_pc' -> 'PC Error')."""
+    internal = _WIRE_TO_INTERNAL.get(ft, ft)
+    return FAULT_TYPES.get(internal, ft)
 
 ASIL_LEVELS = ["ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D"]
 

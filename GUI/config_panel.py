@@ -229,8 +229,8 @@ class ConfigPanel(QWidget):
         vl.addWidget(self._variable_label)
         vl.addWidget(self._variable_input)
 
-        self._address_label = FieldLabel("Address (program counter)")
-        self._address_input = self._make_input("e.g. 0x00000400")
+        self._address_label = FieldLabel("PC symbol (resolved via ELF)")
+        self._address_input = self._make_input("e.g. main or cruise_loop")
         self._address_input.textChanged.connect(self._check_run_ready)
         vl.addWidget(self._address_label)
         vl.addWidget(self._address_input)
@@ -295,7 +295,7 @@ class ConfigPanel(QWidget):
         vl.addWidget(self._machine_combo)
         vl.addWidget(FieldLabel("CPU"))
         vl.addWidget(self._cpu_combo)
-        vl.addWidget(FieldLabel("GDB port"))
+        vl.addWidget(FieldLabel("Server port"))
         vl.addWidget(self._gdb_combo)
 
         # ── QEMU session (used when the injector launches QEMU) ──

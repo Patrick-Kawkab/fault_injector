@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -58,6 +59,8 @@ class InjectorInterface:
         else:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             self.workdir = os.path.join("runs", f"run_{ts}")
+        # Absolute, so the injector reads/writes these regardless of its own CWD.
+        self.workdir = os.path.abspath(self.workdir)
         os.makedirs(self.workdir, exist_ok=True)
 
         self.config_path = os.path.join(self.workdir, "fault_config.json")
@@ -67,13 +70,6 @@ class InjectorInterface:
         self._lock = threading.Lock()
         self._aborted = False
 
-        # The endpoint the injector dials — user-selected port (config.gdb_port),
-        # overriding the target's default so the UI dropdown is authoritative.
-        args = target.injector_args()
-        self._gdb = f"localhost:{config.gdb_port}"
-        if "--gdb" in args:
-            args[args.index("--gdb") + 1] = self._gdb
-
         # Resolve the command once, up front, so the worker can ask whether
         # we are running the mock before deciding to bring up real hardware.
         if use_mock or not injector_binary or not os.path.exists(injector_binary):
@@ -82,13 +78,39 @@ class InjectorInterface:
         else:
             base = [injector_binary]
             self.using_mock = False
-        self._cmd: List[str] = base + [
-            "--config", self.config_path,
-            "--out", self.result_path,
-        ] + args
+        # The injector reads two positional args: <config.json> <result.json>.
+        # It takes the backend/port/timeout from the JSON, not the CLI.
+        self._cmd: List[str] = base + [self.config_path, self.result_path]
+
+        # Their injector uses relative paths for its plugin and firmware
+        # (./Qemu_Plugin/..., ./Cruise_Control/Qemu/Corrected/...), so run it
+        # from its own project directory. Override with FI_INJECTOR_CWD; defaults
+        # to the injector binary's directory. Mock runs in the framework's CWD.
+        if self.using_mock:
+            self._cwd: Optional[str] = None
+        else:
+            self._cwd = (os.environ.get("FI_INJECTOR_CWD")
+                         or os.path.dirname(os.path.abspath(injector_binary))
+                         or None)
 
     def _write_config(self) -> None:
         payload = self.config.to_injector_input()
+        # Self-describing run folder: the config and result files live here.
+        payload["meta"]["config_file"] = self.config_path
+        payload["meta"]["result_file"] = self.result_path
+        # The injector resolves the firmware at run_dir/<firmware>, so stage the
+        # selected ELF into this run folder and advertise run_dir. If there's no
+        # real file to copy, omit run_dir so the injector falls back to its own
+        # firmware directory (QEMU_ELF_PATH / HARDWARE_ELF_PATH).
+        fw = getattr(self.config, "firmware", "") or ""
+        if fw and os.path.isfile(fw):
+            dst = os.path.join(self.workdir, os.path.basename(fw))
+            try:
+                if os.path.abspath(fw) != os.path.abspath(dst):
+                    shutil.copy2(fw, dst)
+                payload["meta"]["run_dir"] = self.workdir
+            except OSError:
+                pass  # leave run_dir unset; injector uses its default ELF dir
         with open(self.config_path, "w") as fh:
             json.dump(payload, fh, indent=2)
 
@@ -103,6 +125,7 @@ class InjectorInterface:
         with self._lock:
             self._proc = subprocess.Popen(
                 self._cmd,
+                cwd=self._cwd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,  # surface injector diagnostics as logs
                 text=True,

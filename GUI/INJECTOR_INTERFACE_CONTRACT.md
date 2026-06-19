@@ -27,22 +27,22 @@ Process model (no separate GDB process — OpenOCD is the debugger):
     **injector launches QEMU itself** (its own process), using the per-fault `trigger` / `pc_trigger` / `timeout` fields below.
 
 ```
-<injector> --config <config.json> --out <result.json> --backend <tiva|qemu> --gdb <host:port>
+<injector> <config.json> <result.json>
 ```
 
 | Arg | Meaning |
 | --- | --- |
-| `--config` | Path to the input JSON the injector must read. |
-| `--out` | Path the injector must write the result JSON to. |
-| `--backend` | `tiva` (real hardware) or `qemu` (emulation). |
-| `--gdb` | Endpoint the injector dials to reach the debug stack, e.g. `localhost:3333`. |
+| `argv[1]` | Path to the input JSON the injector must read. |
+| `argv[2]` | Path the injector must write the result JSON to. |
+
+Two positional arguments — no flags. The backend, port and timeout come from the JSON `meta`, not the CLI.
 
 Process behaviour the orchestrator depends on:
 
 - **stdout** — optional progress lines for the live monitor (see §4). If you emit nothing, the monitor simply fills in once at the end.
 - **stderr** — free‑form diagnostics. The orchestrator surfaces these as log lines; they do not need to be JSON.
 - **Exit code** — `0` means the campaign ran to completion. A fault whose `result` is `FAIL` is a **normal, successful outcome** (the injector did its job) and must **not** cause a non‑zero exit. Reserve non‑zero exit codes for infrastructure failures only (cannot connect to the port, bad config, target unreachable).
-- The injector reads `--config`, performs every fault in order, writes `--out`, then exits.
+- The injector reads `argv[1]`, performs every fault in order, writes `argv[2]`, then exits.
 
 ---
 
@@ -51,13 +51,14 @@ Process behaviour the orchestrator depends on:
 ```json
 {
   "meta": {
-    "firmware": "tiva_led.elf",
-    "mode": "HARDWARE",
+    "firmware": "cruise.elf",
+    "mode": "qemu",
     "target": "ARM",
     "asil_level": "ASIL-D",
     "machine": "lm3s6965evb",
     "cpu": "cortex-m4",
-    "gdb": 3333
+    "server_port": 9001,
+    "timeout_secs": 60
   },
   "faults": [
     {
@@ -86,36 +87,37 @@ Process behaviour the orchestrator depends on:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `firmware` | string | ELF the target is running. |
-| `mode` | string | `HARDWARE` (tiva) or `EMULATION` (qemu). |
+| `mode` | string | `qemu` (emulation) or `hardware` (Tiva). The injector branches on this. |
 | `target` | string | Architecture, currently `ARM`. |
 | `asil_level` | string | `ASIL-A` … `ASIL-D`. Drives the orchestrator's pass/fail thresholds, not the injection. |
 | `machine` | string | Target board / QEMU machine, e.g. `lm3s6965evb`. User-selected in the UI. |
 | `cpu` | string | CPU core, e.g. `cortex-m4` / `cortex-m3`. User-selected in the UI. |
-| `gdb` | int | Port the injector dials on localhost (the system always runs locally, so only the port is sent — `3333`, not `"localhost:3333"`). User-selected (3333 / 4444 / 1234 / 9001). |
+| `server_port` | int | TCP port the injector's plugin server binds (localhost). User-selected (3333 / 4444 / 1234 / 9001). |
+| `timeout_secs` | int | QEMU session timeout in seconds (the injector's `QemuSessionConfig`). |
+| `firmware` | string | **Bare ELF filename** (e.g. `cruise.elf`); the injector prepends its own ELF directory. Do not send a full path. |
 
 ### `faults[]` (one object per injection)
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | int | Unique injection id (1‑based). |
-| `fault_type` | string | One of `sensor_corruption`, `memory_corruption`, `bit_flip`, `pc_error`, `task_delay`. |
-| `variable` | string | Variable to inject into, e.g. `speed_RPM`. **Empty for `pc_error`.** The injector resolves it to an address via the ELF symbol table / GDB. |
-| `address` | string | Hex address for `pc_error` (the program counter has no symbol), e.g. `0x00000400`. **Empty for all other types.** Always present so the shape stays invariant. |
-| `system_state` | string | Variable to monitor to judge whether the system reached its safe state. Only meaningful for `sensor_corruption` / `task_delay`, but **always present** (empty otherwise) so the JSON shape is invariant across configs. |
-| `value` | int | Value written for corruption faults. **For `task_delay` this is the delay magnitude in ms.** Ignored for `bit_flip` / `pc_error`. |
+| `fault_type` | string | One of `sensor_corruption`, `memory_corruption`, `bit_flip`, `set_pc`, `instruction_skip` (the injector's `kFaultTypeMap`). The GUI's "PC Error" is sent as `set_pc`, "Task Delay" as `instruction_skip`. |
+| `variable` | string | Symbol to inject into, e.g. `speed_RPM` (resolved via `nm` → `inject_addr`). Empty for `set_pc`. |
+| `address` | string | **Symbol name** for `set_pc` (resolved via `arm-none-eabi-nm` on the ELF), e.g. `cruise_loop`. **Not a hex address.** Empty for other types. |
+| `system_state` | string | Symbol to monitor for the safe state (resolved via `nm` → `sensor_addr`). Available for all types; empty when unused. |
+| `value` | int | Value written for corruption faults (→ `injected_value`, uint8). |
 | `min` | int | Low end of the variable's valid range (for context / verdict). |
 | `max` | int | High end of the valid range. |
 | `duration_ms` | int | How long to keep injecting the fault, in ms. Must exceed the firmware's own fault‑reaction threshold or the system never reacts (see sizing note). |
 | `interval_ms` | int | How often to re‑inject during the hold window, in ms. Must be smaller than the firmware's sampling period so re‑injection beats any ISR that overwrites the value. |
-| `delay_ms` | int | **ASIL recovery deadline (ms)** — the injector FAILs any injection whose recovery is later than this. Same for every fault in the campaign (from the ASIL: A 50, B 30, C 20, D 10). Distinct from the `task_delay` magnitude in `value`. |
+| `delay_ms` | int | Read by the injector as `target_count` (the instruction-count trigger). Only used when `trigger == "insn_count"`; ignored for `pc` / `mem_access` triggers. |
 | `bit_position` | int | Bit to flip when `fault_type == "bit_flip"`; ignored otherwise. |
-| `trigger` | string | QEMU trigger the injector uses when it launches QEMU: `mem_access` / `insn_count` / `pc`. Ignored on the Tiva backend. |
-| `pc_trigger` | string | PC value to trigger on (used when `trigger == "pc"`). Ignored on the Tiva backend. |
-| `timeout` | int | QEMU session timeout (seconds). Ignored on the Tiva backend. |
+| `trigger` | string | **Required.** `mem_access` / `insn_count` / `pc` (the injector's `kTriggerMap`). |
+| `pc_trigger` | string | Present for the GUI; the injector does not read it (it derives the PC from `address`). |
 
 > **Varied campaigns:** the `faults[]` entries may be identical (same fault ×N) or distinct (a user-built list repeated to reach N). Either way each entry is self-contained and processed independently by `id`; the shape is unchanged.
 
-> **Per‑type field use** (the parser keys off `fault_type`): `sensor_corruption` → `variable` + `value` + `system_state`; `memory_corruption` → `variable` + `value`; `bit_flip` → `variable` + `bit_position`; `pc_error` → `address` only; `task_delay` → `variable` + `value` (= delay ms) + `system_state`. Unused fields are still present, just empty/zero.
+> **Per‑type field use** (per the injector's `FaultConfig.h`): `memory_corruption` → `address`+`variable`+`value`+`min`/`max`; `instruction_skip` → `address`+`variable`; `bit_flip` → `delay_ms`(count)+`variable`+`bit_position`+`min`/`max`; `set_pc` → `delay_ms`(count)+`address`; `sensor_corruption` → `system_state`+`variable`+`value`+`min`/`max`. Unused fields are still present.
 
 > **Sizing `duration_ms` / `interval_ms` (firmware‑specific).** These must be
 > matched to the firmware under test, not guessed. `duration_ms` has to outlast
@@ -140,8 +142,8 @@ Same shape as the input, with `id` + `result` guaranteed on every fault.
 ```json
 {
   "meta": {
-    "firmware": "tiva_led.elf",
-    "mode": "HARDWARE",
+    "firmware": "cruise.elf",
+    "mode": "qemu",
     "target": "ARM",
     "asil_level": "ASIL-D",
     "overhead_pct": 3.2
@@ -220,7 +222,7 @@ source of truth.
 Your sample:
 
 ```json
-{ "faults": [ { "Firmware": "tiva_led.elf", "Mode": "HARDWARE", "Target": "ARM",
+{ "faults": [ { "Firmware": "cruise.elf", "Mode": "qemu", "Target": "ARM",
                 "address": "0x20000008", "fault_type": "memory_corruption",
                 "id": 1, "max": 2, "min": 0, "result": "FAILED", "value": 255 } ] }
 ```
