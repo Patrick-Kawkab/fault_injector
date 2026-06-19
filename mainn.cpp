@@ -15,6 +15,10 @@
 #define HARDWARE_ELF_PATH       "./Cruise_Control/Hardware/Corrected/"
 #define PLUGIN_PATH             "./Qemu_Plugin/fault_plugin.so"  
 
+// --- constants ---
+constexpr uint32_t CLOCK_HZ = 16'000'000;
+constexpr double   IPC      = 1.0;
+
 #include "FaultConfig.h"
 #include "QemuSession.h"
 #include "Session.h"
@@ -58,7 +62,13 @@ static const std::unordered_map<TriggerType, std::string> kTriggerNames = {
     { TRIGGER_MEM_ACCESS, "mem_access" },
 };
 
-// ─────────────────────────────────
+// ────────helpers─────────────────────────
+
+static uint64_t msToInstructions(uint64_t ms)
+{
+    return static_cast<uint64_t>(
+        (ms / 1000.0) * CLOCK_HZ * IPC);
+}
 
 uint32_t getSystemStateAddress(const std::string& elfPath, const std::string& address)
 {
@@ -113,7 +123,8 @@ uint32_t getSystemStateAddress(const std::string& elfPath, const std::string& ad
 
 static FaultDescriptor parseFaultDescriptor(
     const json& fault,
-    const std::string& elfPath)
+    const std::string& elfPath,
+    const std::string& mode)
 {
     FaultDescriptor d{};
 
@@ -158,10 +169,14 @@ static FaultDescriptor parseFaultDescriptor(
             : getSystemStateAddress(elfPath, system_state);
 
     d.target_count =
-        fault.value("delay_ms", uint64_t(0));
+        mode == "qemu"
+            ? msToInstructions(fault.value("delay_ms",    uint64_t(0)))
+            : fault.value("delay_ms",    uint64_t(0));
 
     d.observe_window =
-        fault.value("duration_ms", uint64_t(0));
+        mode == "qemu"
+            ? msToInstructions(fault.value("duration_ms", uint64_t(0)))
+            : fault.value("duration_ms", uint64_t(0));
 
     d.injected_value =
         fault.value("value", 0u);
@@ -268,8 +283,7 @@ static void writeResult(
 // ============================================================================
 
 int main(int argc ,char* argv[]){
-    const std::string inputFile  = (argc > 1) ? argv[1] : CONFIG_JSON_PATH;
-    const std::string resultFile = (argc > 2) ? argv[2] : RESULT_JSON_PATH;
+    const std::string inputFile  = (argc > 1) ? argv[1] : NULL;
 
     std::ifstream ifs(inputFile);
     if (!ifs.is_open()) {
@@ -284,12 +298,11 @@ int main(int argc ,char* argv[]){
         return 1;
     }
 
-    // Clear previous campaign result
-    std::ofstream(resultFile, std::ios::trunc).close();
-
     json campaignResult;
     campaignResult["meta"] = config["meta"];
     campaignResult["faults"] = json::array();
+
+    const std::string resultFile =  config["meta"]["mode"].get<std::string>();//
 
     std::string mode = config["meta"]["mode"].get<std::string>();
     std::cout << "[main] Running in mode: " << mode << '\n';
@@ -312,7 +325,7 @@ int main(int argc ,char* argv[]){
 
     for (const auto& fault : config["faults"]){
         auto session = Session::create(mode, (mode == "qemu") ? sessionCfgPtr.get() : nullptr);
-        FaultDescriptor desc = parseFaultDescriptor(fault, elfPath);
+        FaultDescriptor desc = parseFaultDescriptor(fault, elfPath, mode);
         if (session->start() != 0) {
             std::cerr << "[main] session.start() failed\n";
             return 1;

@@ -5,13 +5,22 @@
             "id": 1,
             "max": 255,
             "min": 10,
-            "result": "FAIL",
+            "result": "PASS",
             "value": 0,
             "variable": "sim_rpm"
         },
         {
-            "fault_type": "memory_corruption",
+            "fault_type": "sensor_corruption",
             "id": 2,
+            "max": 0,
+            "min": 0,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 3,
             "max": 255,
             "min": 10,
             "result": "PASS",
@@ -20,7 +29,34 @@
         },
         {
             "fault_type": "memory_corruption",
-            "id": 3,
+            "id": 4,
+            "max": 255,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "sim_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 5,
+            "max": 255,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "sim_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 6,
+            "max": 255,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "sim_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 7,
             "max": 255,
             "min": 10,
             "result": "PASS",
