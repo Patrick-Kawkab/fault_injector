@@ -15,9 +15,6 @@
 #define HARDWARE_ELF_PATH       "./Cruise_Control/Hardware/Corrected/"
 #define PLUGIN_PATH             "./Qemu_Plugin/fault_plugin.so"  
 
-// --- constants ---
-constexpr uint32_t CLOCK_HZ = 16'000'000;
-constexpr double   IPC      = 1.0;
 
 #include "FaultConfig.h"
 #include "QemuSession.h"
@@ -29,6 +26,9 @@ constexpr double   IPC      = 1.0;
 #include <string>
 #include <unordered_map>
 
+// --- constants ---
+constexpr uint32_t CLOCK_HZ = 16'000'000;
+constexpr double   IPC      = 1.0;
 
 using json = nlohmann::json;
 
