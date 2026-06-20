@@ -60,8 +60,6 @@ uint32_t sanitize_sample_period(uint32_t period);
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
 <<<<<<< Updated upstream
-#define MAX_VALID_RPM           500
-
 =======
 #define MAX_VALID_RPM           9000
 #define WHEEL_RADIUS            6
@@ -130,13 +128,6 @@ uint32_t sanitize_target_rpm(uint32_t rpm) {
 }
 
 <<<<<<< Updated upstream
-uint32_t sanitize_measured_rpm(uint32_t rpm) {
-    if (rpm > MAX_VALID_RPM) {
-        return current_rpm;
-    }
-    return rpm;
-}
-
 =======
 >>>>>>> Stashed changes
 CruiseState sanitize_cruise_state(CruiseState state) {
