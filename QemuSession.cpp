@@ -214,8 +214,8 @@ bool QEMUSession::launchQEMU() {
         << " -e sh -c '" << qemuCmd.str() << "'";
         //<< " &";   // background so fork+exec returns immediately
 
-    std::cout << "\n[QEMUSession] ---- Launching QEMU in xterm ----------------\n";
-    std::cout << "[QEMUSession] cmd: " << cmd.str() << "\n";
+    std::cout << "\n[QEMUSession] ---- Launching QEMU ----------------\n";
+    std::cout << "[QEMUSession] cmd: " << qemuCmd.str() << "\n";
 
     qemuPid_ = ::fork();
 

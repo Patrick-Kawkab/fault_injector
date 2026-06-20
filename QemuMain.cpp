@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
     FaultResult result{};
     switch (static_cast<FaultType>(desc.fault_type)) {
         case FAULT_MEMORY_CORRUPTION: result = session.memoryCorruptionTest(desc); break;
-        case FAULT_INSTRUCTION_SKIP:  result = session.instructionSkipTest(desc);  break;
+        case FAULT_INSTRUCTION_SKIP:  result = session.Task_delay(desc);           break;
         case FAULT_BIT_FLIP:          result = session.bitFlipTest(desc);          break;
         case FAULT_SET_PC:            result = session.setPC(desc);                break;
         case FAULT_SENSOR_CORRUPTION: result = session.sensorCorruptionTest(desc); break;
