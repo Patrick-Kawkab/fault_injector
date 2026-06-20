@@ -283,7 +283,7 @@ static void writeResult(
 // ============================================================================
 
 int main(int argc ,char* argv[]){
-    const std::string inputFile  = (argc > 1) ? argv[1] : NULL;
+   const std::string inputFile = (argc > 1) ? argv[1] : CONFIG_JSON_PATH;
 
     std::ifstream ifs(inputFile);
     if (!ifs.is_open()) {
@@ -302,7 +302,8 @@ int main(int argc ,char* argv[]){
     campaignResult["meta"] = config["meta"];
     campaignResult["faults"] = json::array();
 
-    const std::string resultFile =  config["meta"]["xxxx"].get<std::string>();//xxxx -> el mkan elli 7atito feh el result
+    const std::string resultFile = config["meta"].value("result_file",
+        (argc > 2) ? std::string(argv[2]) : std::string(RESULT_JSON_PATH));
 
     std::string mode = config["meta"]["mode"].get<std::string>();
     std::cout << "[main] Running in mode: " << mode << '\n';

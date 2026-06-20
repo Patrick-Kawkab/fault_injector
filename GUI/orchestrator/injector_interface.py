@@ -122,6 +122,13 @@ class InjectorInterface:
         breaks out early. ``terminate()`` may be called from another thread.
         """
         self._write_config()
+        # Surface exactly what we run, so the injector handshake is debuggable.
+        yield {"type": "log",
+               "message": f"[RUN]  {'mock' if self.using_mock else 'injector'}: "
+                          + " ".join(self._cmd)}
+        yield {"type": "log",
+               "message": f"[RUN]  cwd={self._cwd or os.getcwd()}  "
+                          f"config={self.config_path}"}
         with self._lock:
             self._proc = subprocess.Popen(
                 self._cmd,
