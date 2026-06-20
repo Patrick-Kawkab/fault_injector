@@ -37,7 +37,6 @@ typedef enum { STATE_OFF, STATE_ACTIVE } CruiseState; // Cruise control mode
 
 void FailSafe_Shutdown(void);
 uint32_t sanitize_target_rpm(uint32_t rpm);
-uint32_t sanitize_measured_rpm(uint32_t rpm);
 CruiseState sanitize_cruise_state(CruiseState state);
 uint32_t sanitize_duty(uint32_t duty);
 uint32_t sanitize_sample_period(uint32_t period);
@@ -60,8 +59,13 @@ uint32_t sanitize_sample_period(uint32_t period);
 #define ZERO_RPM_LIMIT          30     // 30 * 100ms = about 3 seconds before auto-cancel
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
+<<<<<<< Updated upstream
 #define MAX_VALID_RPM           500
 
+=======
+#define MAX_VALID_RPM           9000
+#define WHEEL_RADIUS            6
+>>>>>>> Stashed changes
 // ============================================================
 // LCD pin definitions
 // Note: PC4=RS, PC5=E, PC6=D4, PC7=D5, PB4=D6, PB5=D7
@@ -125,6 +129,7 @@ uint32_t sanitize_target_rpm(uint32_t rpm) {
     return rpm;
 }
 
+<<<<<<< Updated upstream
 uint32_t sanitize_measured_rpm(uint32_t rpm) {
     if (rpm > MAX_VALID_RPM) {
         return current_rpm;
@@ -132,6 +137,8 @@ uint32_t sanitize_measured_rpm(uint32_t rpm) {
     return rpm;
 }
 
+=======
+>>>>>>> Stashed changes
 CruiseState sanitize_cruise_state(CruiseState state) {
     if ((state != STATE_OFF) && (state != STATE_ACTIVE)) {
         return STATE_OFF;
@@ -438,7 +445,6 @@ void vEncoderTask(void *pvParameters) {
         uint32_t rpm = (count * 60000UL) / ((uint32_t)ENCODER_PPR * period); // pulses/100ms -> pulses/min -> revolutions/min
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) { // Lock RPM shared variable
-            rpm = sanitize_measured_rpm(rpm);
             current_rpm = rpm;                      // Publish new measured RPM
             xSemaphoreGive(xRPMMutex);              // Unlock RPM mutex
         }
@@ -485,7 +491,7 @@ void vCruiseTask(void *pvParameters) {
         }
 
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(5)) == pdTRUE) { // Read shared RPM safely
-            rpm = sanitize_measured_rpm(current_rpm);                      // Snapshot measured RPM
+            rpm = current_rpm;                      // Snapshot measured RPM
             xSemaphoreGive(xRPMMutex);              // Release RPM mutex
         } else {
             continue;                               // Skip this cycle if mutex unavailable
@@ -643,7 +649,7 @@ void vLCDTask(void *pvParameters) {
         CruiseState state;
         
         if (xSemaphoreTake(xRPMMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
-            rpm = sanitize_measured_rpm(current_rpm);
+            rpm = current_rpm;
             xSemaphoreGive(xRPMMutex);
         } else {
             continue;
@@ -656,11 +662,14 @@ void vLCDTask(void *pvParameters) {
         } else {
             continue;                               // Skip update if mutex unavailable
         }
+        float wheel_circumference = 2 * 3.14 * WHEEL_RADIUS;
+        float kph_f = ((float)rpm) * wheel_circumference / (1000.0f * 10) ;
+        uint32_t kph = (uint32_t)kph_f;
 
         LCD_SetCursor(0, 7);                        // Move cursor after " Speed:"
-        uint32_to_str(rpm, num_buf, 4);             // Format RPM into 4-character field
+        uint32_to_str(kph, num_buf, 4);             // Format RPM into 4-character field
         LCD_String(num_buf);                        // Print current RPM
-        LCD_String(" RPM");                         // Print unit label
+        LCD_String(" KPH");                         // Print unit label
 
         LCD_SetCursor(1, 7);                        // Move cursor after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM into 4-character field
