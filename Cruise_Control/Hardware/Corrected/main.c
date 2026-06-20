@@ -59,11 +59,8 @@ uint32_t sanitize_sample_period(uint32_t period);
 #define ZERO_RPM_LIMIT          30     // 30 * 100ms = about 3 seconds before auto-cancel
 #define TASK_WATCHDOG_LIMIT     20     // 20 * 100ms = about 2 seconds task stall threshold
 #define BUTTON_RELEASE_TIMEOUT  500    // Max wait (ms) for button release before continuing
-<<<<<<< Updated upstream
-=======
 #define MAX_VALID_RPM           9000
 #define WHEEL_RADIUS            6
->>>>>>> Stashed changes
 // ============================================================
 // LCD pin definitions
 // Note: PC4=RS, PC5=E, PC6=D4, PC7=D5, PB4=D6, PB5=D7
@@ -127,9 +124,6 @@ uint32_t sanitize_target_rpm(uint32_t rpm) {
     return rpm;
 }
 
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
 CruiseState sanitize_cruise_state(CruiseState state) {
     if ((state != STATE_OFF) && (state != STATE_ACTIVE)) {
         return STATE_OFF;
