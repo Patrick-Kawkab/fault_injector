@@ -1,0 +1,215 @@
+{
+    "faults": [
+        {
+            "fault_type": "memory_corruption",
+            "id": 1,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 2,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 3,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 4,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 5,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 6,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 7,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 8,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 9,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 10,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 11,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 12,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 13,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 14,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 15,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 16,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 17,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 18,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 19,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 20,
+            "max": 100,
+            "min": 10,
+            "result": "PASS",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 21,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 22,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        }
+    ],
+    "meta": {
+        "asil_level": "ASIL-A",
+        "config_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004805/fault_config.json",
+        "cpu": "cortex-m4",
+        "firmware": "main.elf",
+        "machine": "lm3s6965evb",
+        "mode": "hardware",
+        "result_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004805/campaign_result.json",
+        "run_dir": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004805",
+        "server_port": 4444,
+        "target": "ARM",
+        "timeout_secs": 44
+    }
+}

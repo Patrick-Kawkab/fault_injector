@@ -7,7 +7,8 @@ Uses QWebEngineView to render a Chart.js radar chart.
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QTextEdit, QFrame, QSizePolicy, QProgressBar, QPushButton
+    QTextEdit, QFrame, QSizePolicy, QProgressBar, QPushButton,
+    QScrollArea,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
 from PyQt5.QtGui import QPainter, QColor, QFont
@@ -323,6 +324,22 @@ class MonitorTab(QWidget):
         fault_label = FAULT_TYPES.get(config.fault_type, config.fault_type)
         hw_label    = HARDWARE_MODES.get(config.hardware, config.hardware)
 
+        # Wrap the running view in a scroll area so all sections (radar chart,
+        # log, etc.) stay accessible even on shorter windows. When the window
+        # is tall enough the scrollbar never appears and the layout looks
+        # identical to before.
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet("background: transparent;")
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        body = QVBoxLayout(container)
+        body.setContentsMargins(0, 0, 0, 0)
+        body.setSpacing(10)
+        scroll.setWidget(container)
+        self._root.addWidget(scroll)
+
         banner_msg = (
             f"<b>Hardware:</b> {hw_label} &nbsp;·&nbsp; "
             f"<b>Sensor:</b> {config.sensor} &nbsp;·&nbsp; "
@@ -335,7 +352,7 @@ class MonitorTab(QWidget):
         self._banner = BigConfirmBanner(banner_msg)
         self._banner.confirmed.connect(on_confirm)
         self._banner.edit_requested.connect(on_edit)
-        self._root.addWidget(self._banner)
+        body.addWidget(self._banner)
 
         # ── Metric cards ──
         metrics_row = QHBoxLayout()
@@ -347,7 +364,7 @@ class MonitorTab(QWidget):
         self._m_latency  = MetricCard("ASIL deadline", f"{_deadline}ms", config.asil_level, styles.ACCENT_AMBER)
         for m in [self._m_tests, self._m_detected, self._m_coverage, self._m_latency]:
             metrics_row.addWidget(m)
-        self._root.addLayout(metrics_row)
+        body.addLayout(metrics_row)
 
         # ── Charts row: radar (left) + donut (right) ──
         charts_row = QHBoxLayout()
@@ -403,7 +420,7 @@ class MonitorTab(QWidget):
         donut_outer.addLayout(donut_center, stretch=1)
         charts_row.addWidget(donut_card, stretch=2)
 
-        self._root.addLayout(charts_row)
+        body.addLayout(charts_row)
 
         # ── Progress bar ──
         prog_card = CardFrame()
@@ -421,7 +438,7 @@ class MonitorTab(QWidget):
         prog_layout.addWidget(self._progress_lbl)
         prog_layout.addWidget(self._progress_bar, stretch=1)
         prog_card.addLayout(prog_layout)
-        self._root.addWidget(prog_card)
+        body.addWidget(prog_card)
 
         # ── Log ──
         log_card = CardFrame()
@@ -431,7 +448,7 @@ class MonitorTab(QWidget):
         self._log.setMinimumHeight(200)
         self._log.setMaximumHeight(400)
         log_card.addWidget(self._log)
-        self._root.addWidget(log_card, stretch=1)
+        body.addWidget(log_card, stretch=1)
 
         self._total       = 0
         self._detected    = 0
@@ -496,7 +513,7 @@ class MonitorTab(QWidget):
         labels, values = [], []
         for ft, stats in self._fault_stats.items():
             pct = round(stats["detected"] / stats["total"] * 100) if stats["total"] else 0
-            labels.append(ft[:12])
+            labels.append(ft[:20])
             values.append(pct)
         if labels:
             self._radar.update_data(labels, values)

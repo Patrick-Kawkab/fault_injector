@@ -1,0 +1,62 @@
+{
+    "faults": [
+        {
+            "fault_type": "memory_corruption",
+            "id": 1,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 2,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 3,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 4,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        },
+        {
+            "fault_type": "memory_corruption",
+            "id": 5,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        }
+    ],
+    "meta": {
+        "asil_level": "ASIL-D",
+        "config_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004623/fault_config.json",
+        "cpu": "cortex-m4",
+        "firmware": "main.elf",
+        "machine": "lm3s6965evb",
+        "mode": "hardware",
+        "result_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004623/campaign_result.json",
+        "run_dir": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260621_004623",
+        "server_port": 4444,
+        "target": "ARM",
+        "timeout_secs": 60
+    }
+}

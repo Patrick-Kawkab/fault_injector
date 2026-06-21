@@ -47,7 +47,7 @@ uint32_t sanitize_sample_period(uint32_t period);
 #define PWM_PERIOD              1000   // PWM counter top value; determines PWM period
 #define THROTTLE_ON             80     // Duty cycle used when cruise needs acceleration
 #define THROTTLE_OFF            0      // Duty cycle used when throttle should be cut
-#define DEADBAND                5      // Allowable RPM error band before switching output
+#define DEADBAND                2      // Allowable RPM error band before switching output
 
 #define SPEED_MIN               0      // Minimum target RPM allowed
 #define SPEED_MAX               300    // Maximum target RPM allowed

@@ -219,13 +219,26 @@ class ResultsTab(QWidget):
         lat_vl.setSpacing(8)
         lat_vl.setAlignment(Qt.AlignVCenter)
 
-        chart = SimpleBarChart(
-            labels_h, buckets,
-            [styles.ACCENT_BLUE, styles.ACCENT_BLUE, styles.ACCENT_BLUE,
-             styles.ACCENT_AMBER, styles.ACCENT_RED]
-        )
-        chart.setMinimumHeight(130)
-        lat_vl.addWidget(chart)
+        if latencies:
+            chart = SimpleBarChart(
+                labels_h, buckets,
+                [styles.ACCENT_BLUE, styles.ACCENT_BLUE, styles.ACCENT_BLUE,
+                 styles.ACCENT_AMBER, styles.ACCENT_RED]
+            )
+            chart.setMinimumHeight(130)
+            lat_vl.addWidget(chart)
+        else:
+            # Injector did not report per-fault reaction times — show a clear
+            # placeholder instead of an empty (all-zero) bar chart.
+            no_timing = QLabel("No per-fault reaction time data\n"
+                               "(injector enforces the FTTI deadline internally)")
+            no_timing.setAlignment(Qt.AlignCenter)
+            no_timing.setWordWrap(True)
+            no_timing.setMinimumHeight(130)
+            no_timing.setStyleSheet(
+                f"color: {styles.TEXT_DISABLED}; font-size: 12px; background: transparent;"
+            )
+            lat_vl.addWidget(no_timing)
 
         stats_row = QHBoxLayout()
         stats_row.setAlignment(Qt.AlignHCenter)
