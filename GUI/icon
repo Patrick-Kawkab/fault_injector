@@ -1,0 +1,38 @@
+# 0. put the icon in the GUI folder (skip if you saved it there directly)
+mv ~/Downloads/fault_injector.png ~/Desktop/fault_injector/GUI/ 2>/dev/null
+
+# 1. wrapper script that cd's into the GUI and launches it
+cat > ~/Desktop/fault_injector/GUI/run_gui.sh << 'EOF'
+#!/usr/bin/env bash
+cd "$(dirname "$0")" || exit 1
+# To use the real C++ injector instead of the mock, uncomment + adjust these:
+# export FI_INJECTOR="$HOME/Desktop/fault_injector/mainn"
+# export FI_INJECTOR_CWD="$HOME/Desktop/fault_injector"
+exec python3 main.py
+EOF
+chmod +x ~/Desktop/fault_injector/GUI/run_gui.sh
+
+# 2. register it as an app (searchable in Activities, pinnable to the dock)
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/fault-injector.desktop << 'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Fault Injector
+GenericName=Fault Injection Framework
+Comment=ISO 26262 / ASIL-D Fault Injection Framework
+Exec=/home/justsaber/Desktop/fault_injector/GUI/run_gui.sh
+Path=/home/justsaber/Desktop/fault_injector/GUI
+Icon=/home/justsaber/Desktop/fault_injector/GUI/fault_injector.png
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=true
+EOF
+update-desktop-database ~/.local/share/applications 2>/dev/null
+
+# 3. also drop a clickable icon on the Desktop, and mark it trusted
+cp ~/.local/share/applications/fault-injector.desktop ~/Desktop/
+chmod +x ~/Desktop/fault-injector.desktop
+gio set ~/Desktop/fault-injector.desktop metadata::trusted true 2>/dev/null
+
+echo "Done. Search 'Fault Injector' in Activities, or double-click the desktop icon."

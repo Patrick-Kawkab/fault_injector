@@ -77,7 +77,8 @@ class OrchestratorWorker(QThread):
             self.log_line.emit(f"[INFO]  Fault type: {fault_label}")
             self.log_line.emit(f"[INFO]  Target:     {cfg.variable or cfg.address}")
             self.log_line.emit(f"[INFO]  Duration:   {cfg.duration_s}s")
-            self.log_line.emit(f"[INFO]  Inject:     hold {cfg.duration_ms}ms, re-inject every {cfg.interval_ms}ms")
+            _d, _dur, _intv = cfg.asil_timing()
+            self.log_line.emit(f"[INFO]  Inject:     hold {_dur}ms, re-inject every {_intv}ms")
             expected = cfg.expected_behavior.strip() or expected_safe_state(cfg.sensor, cfg.fault_type)
             self.log_line.emit(f"[INFO]  Expected safe state: {expected}")
 

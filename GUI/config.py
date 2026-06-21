@@ -29,9 +29,9 @@ class FaultConfig:
     system_state: str = ""            # variable to monitor for safety (sensor_corruption / task_delay only)
     duration_s: int = 60              # seconds (campaign-level, informational)
     num_faults: int = 30              # number of injections in the campaign
-    duration_ms: int = 3500           # hold the fault this long per injection (ms)
-    interval_ms: int = 50             # re-inject the fault every this many ms
-    delay_ms: int = 0                 # ASIL recovery deadline (ms); set from asil_level at serialization
+    duration_ms: int = 3500           # default; actual value derived from asil_level at serialization
+    interval_ms: int = 50             # default; actual value derived from asil_level at serialization
+    delay_ms: int = 0                 # default; actual value derived from asil_level at serialization
     min_value: int = 0                # sensor min
     max_value: int = 255              # sensor max
     fault_value: int = 0              # value to inject (corruption); delay magnitude (ms) for task_delay
@@ -49,6 +49,17 @@ class FaultConfig:
 
     def _mode(self) -> str:
         return "hardware" if self.hardware == "tivac" else "qemu"
+
+    def asil_timing(self) -> tuple:
+        """(delay_ms, duration_ms, interval_ms) for the selected ASIL level.
+
+        More critical level -> smaller values; ASIL-D is the tightest.
+        """
+        return (
+            ASIL_DELAY_MS.get(self.asil_level, 250),
+            ASIL_DURATION_MS.get(self.asil_level, 3500),
+            ASIL_INTERVAL_MS.get(self.asil_level, 40),
+        )
 
     def to_injector_input(self, count: int = None) -> dict:
         """Build the ``{meta, faults[]}`` contract the injector reads.
@@ -68,13 +79,14 @@ class FaultConfig:
             "server_port": self.gdb_port,          # plugin TCP server port (injector reads this)
             "timeout_secs": self.qemu_timeout,     # QEMU session timeout (injector reads this)
         }
-        # delay_ms carries the ASIL-specific recovery deadline the injector
-        # compares against (late recovery -> FAIL). Same for every fault in the
-        # campaign. This is NOT the task_delay magnitude (that lives in value).
-        deadline = ASIL_FTTI_MS.get(self.asil_level, 0)
+        # delay_ms / duration_ms / interval_ms are all derived from the chosen
+        # ASIL level (more critical level -> smaller values), uniform across the
+        # campaign. delay_ms is NOT the task_delay magnitude (that lives in value).
+        delay, duration, interval = self.asil_timing()
         defs = self.varied_faults if self.varied_faults else [self.fault_payload()]
         faults = [
-            {"id": i, **defs[(i - 1) % len(defs)], "delay_ms": deadline}
+            {"id": i, **defs[(i - 1) % len(defs)],
+             "delay_ms": delay, "duration_ms": duration, "interval_ms": interval}
             for i in range(1, count + 1)
         ]
         return {"meta": meta, "faults": faults}
@@ -207,10 +219,19 @@ ASIL_LEVELS = ["ASIL-A", "ASIL-B", "ASIL-C", "ASIL-D"]
 # mitigate (transition to the safe state) to satisfy the ASIL requirement.
 ASIL_COVERAGE = {"ASIL-A": 60, "ASIL-B": 70, "ASIL-C": 80, "ASIL-D": 90}
 
-# Fault-Tolerant Time Interval (FTTI) per ASIL, in ms — the maximum time the system may
-# take to recover. This value is sent to the injector as delay_ms; the injector FAILs any
-# injection that recovers later than this, so a late recovery counts as a failure.
-ASIL_FTTI_MS = {"ASIL-A": 50, "ASIL-B": 30, "ASIL-C": 20, "ASIL-D": 10}
+# Per-ASIL injection timing sent to the injector in the fault config. More critical
+# level -> smaller values (ASIL-D is the tightest).
+#   delay_ms    : wait before injecting         (ms)
+#   duration_ms : hold/observe window per inject (ms)
+#   interval_ms : re-inject cadence             (ms)
+ASIL_DELAY_MS    = {"ASIL-A": 400,  "ASIL-B": 350,  "ASIL-C": 300,  "ASIL-D": 250}
+ASIL_DURATION_MS = {"ASIL-A": 5000, "ASIL-B": 4500, "ASIL-C": 4000, "ASIL-D": 3500}
+ASIL_INTERVAL_MS = {"ASIL-A": 100,  "ASIL-B": 80,   "ASIL-C": 60,   "ASIL-D": 40}
+
+# FTTI (recovery deadline) shown in the Monitor, Results tab, and ISO-26262 report.
+# Kept equal to the per-ASIL delay_ms so the displayed deadline matches the injected
+# timing (e.g. ASIL-D -> 250ms). Change ASIL_DELAY_MS and this follows automatically.
+ASIL_FTTI_MS = dict(ASIL_DELAY_MS)
 # Backwards-compatible alias (older modules referenced this name).
 ASIL_MAX_LATENCY_MS = ASIL_FTTI_MS
 
