@@ -1,0 +1,26 @@
+{
+    "faults": [
+        {
+            "fault_type": "sensor_corruption",
+            "id": 1,
+            "max": 100,
+            "min": 10,
+            "result": "FAIL",
+            "value": 0,
+            "variable": "current_rpm"
+        }
+    ],
+    "meta": {
+        "asil_level": "ASIL-C",
+        "config_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260620_214614/fault_config.json",
+        "cpu": "cortex-m3",
+        "firmware": "main.elf",
+        "machine": "lm3s6965evb",
+        "mode": "hardware",
+        "result_file": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260620_214614/campaign_result.json",
+        "run_dir": "/home/patrick/Documents/my_fault/fault_injector/GUI/runs/run_20260620_214614",
+        "server_port": 4444,
+        "target": "ARM",
+        "timeout_secs": 60
+    }
+}
