@@ -49,6 +49,7 @@ void vLCDTask(void *pvParameters);                         // LCD display update
 #define SAMPLE_PERIOD_MS        100    // Encoder sampling period in milliseconds
 
 #define BUTTON_RELEASE_TIMEOUT  500    // Max time to wait for button release before continuing
+#define WHEEL_RADIUS            6
 
 // ============================================================
 // LCD pin definitions used by this exact code
@@ -527,8 +528,13 @@ void vLCDTask(void *pvParameters) {
             xSemaphoreGive(xStateMutex);            // Release state mutex
         } else { continue; }                        // Skip update if mutex unavailable
 
+
+        float wheel_circumference = 2 * 3.14 * WHEEL_RADIUS;
+        float kph_f = ((float)rpm) * wheel_circumference / (1000.0f * 10) ;
+        uint32_t kph = (uint32_t)kph_f;
+        
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
-        uint32_to_str(rpm, num_buf, 4);             // Format RPM number
+        uint32_to_str(kph, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
         LCD_String(" RPM");                        // Print RPM label
 
