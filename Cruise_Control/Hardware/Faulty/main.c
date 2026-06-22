@@ -536,7 +536,7 @@ void vLCDTask(void *pvParameters) {
         LCD_SetCursor(0, 7);                        // Move after " Speed:"
         uint32_to_str(kph, num_buf, 4);             // Format RPM number
         LCD_String(num_buf);                        // Print RPM value
-        LCD_String(" RPM");                        // Print RPM label
+        LCD_String(" KPH");                        // Print RPM label
 
         LCD_SetCursor(1, 7);                        // Move after "Target:"
         uint32_to_str(target, num_buf, 4);          // Format target RPM
